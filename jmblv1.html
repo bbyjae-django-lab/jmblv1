@@ -596,7 +596,7 @@
     const secs = Math.round((Date.now() - state.runStartAt)/1000);
     const mm = String(Math.floor(secs/60)).padStart(2,'0');
     const ss = String(secs%60).padStart(2,'0');
-    goBody.innerHTML = `You reached level ${levelsCompleted}.${secs>0?('<br>Run time ' + mm + ':' + ss + '.'):''}`;
+    goBody.innerHTML = `You reached level ${levelsCompleted}${secs>0?('<br>Run time ' + mm + ':' + ss ):''}`;
     setBackdrop(gameoverBackdrop, true);
   }
 
