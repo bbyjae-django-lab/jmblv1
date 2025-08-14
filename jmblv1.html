@@ -2,127 +2,175 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
-  <meta name="theme-color" content="#ffffff" id="theme-color" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>JUMBL</title>
+  <meta name="color-scheme" content="light dark">
+
+  <!--
+    JUMBL — Single-file mobile-first prototype
+    ------------------------------------------------------------
+    Usage:
+      1) Place this index.html alongside answers.txt and guesses.txt
+      2) Serve the folder over HTTP, e.g.:
+         python3 -m http.server
+      3) Open on iPhone Safari (portrait), or desktop
+
+    Files:
+      answers.txt  -> UPPERCASE 5-letter ANSWERS (one per line)
+      guesses.txt  -> UPPERCASE accepted words (must include all answers)
+
+    Keyboard shortcuts (desktop):
+      Space   -> Shuffle
+      Backspace/Delete -> Clear all
+  -->
+
   <style>
-    /* =========================
-       THEME & SIZING TOKENS
-       ========================= */
-    :root{
-      /* Implemented exactly per spec */
+    :root {
+      /* Layout rules that prevent stretching */
       --tile: clamp(68px, 9.5vw, 84px);
       --gap: 16px;
       --row-gap: 18px;
 
-      /* Palette */
-      --bg: #FAF7F2;
-      --fg: #222;
-      --muted: #666;
-      --accent: #EE7FB2;
-
-      /* Tiles */
+      /* Colors (light default) */
+      --bg: #FBFBFD;
+      --fg: #1B1E27;
+      --muted: #596072;
+      --track: #ECECEC;
       --tile-bg: #FFFFFF;
+      --tile-fg: #111317;
+      --accent: #EE7FB2; /* placed letters */
+      --bank-grad: linear-gradient(135deg, #F6C58F 0%, #E8A6D8 100%);
+
+      /* Shadows */
       --shadow: 0 10px 24px rgba(0,0,0,.08);
       --inner: inset 0 1px 0 rgba(255,255,255,.35);
 
-      /* Bank gradient */
-      --bank-gradient: linear-gradient(135deg, #F6C58F 0%, #E8A6D8 100%);
-    }
-    [data-theme="dark"]{
-      --bg: #0e0f13;
-      --fg: #f6f6f6;
-      --muted: #a1a1a1;
-      --tile-bg: #1b1d24;
-      --shadow: 0 10px 24px rgba(0,0,0,.40);
-      --inner: inset 0 1px 0 rgba(255,255,255,.08);
+      /* Timer */
+      --timer-h: 14px;
+      --radius-xl: 16px;
+      --radius-xxl: 9999px;
     }
 
-    /* =========================
-       GLOBAL / LAYOUT
-       ========================= */
+    :root[data-theme="dark"] {
+      --bg:#12151C;
+      --fg:#F7F7FA;
+      --muted:#B6BCD1;
+      --track:#2A2E39;
+      --tile-bg:#1B2030;
+      --tile-fg:#F7F7FA;
+    }
+
     * { box-sizing: border-box; }
     html, body { height: 100%; }
-    body{
+    body {
       margin: 0;
+      min-height: 100svh;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
       background: var(--bg);
       color: var(--fg);
-      font: 16px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
-      display: flex;
-      justify-content: center;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    .app{
-      width: min(520px, 100%);
-      padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px);
+      font: 500 16px/1.2 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
       display: grid;
       grid-template-rows: auto auto 1fr auto;
-      gap: 12px;
+      justify-items: center;
     }
 
-    header{
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .wrap {
+      width: 100%;
+      max-width: 520px;
+      padding: 18px 18px 0;
+    }
+
+    header {
       position: relative;
+      text-align: center;
+      margin-block: 6px 8px;
     }
-    h1{
+    header h1 {
       margin: 0;
-      font-size: 22px;
       letter-spacing: 2px;
+      font-weight: 800;
+      font-size: clamp(20px, 5vw, 24px);
     }
-    .theme-toggle{
+    .theme-toggle {
       position: absolute;
       right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+      top: 0;
       border: 0;
-      background: none;
+      background: transparent;
       color: var(--fg);
-      font-size: 20px;
+      padding: 6px 10px;
+      border-radius: 10px;
       cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
     }
-    .theme-toggle:active{ transform: translateY(-50%) scale(0.96); }
 
-    .status{
-      display: flex;
+    /* Status stack */
+    .status {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .status-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      font-weight: 600;
-      letter-spacing: .3px;
+      width: 100%;
     }
-    .status .left, .status .right{ width: 96px; }
-    .status .center{ flex: 1; display: flex; justify-content: center; }
-    .timer{ font-variant-numeric: tabular-nums; }
-
-    .lives{ display: flex; gap: 6px; align-items: center; }
-    .life{
-      width: 14px; height: 14px;
+    .level {
+      justify-self: start;
+      font-weight: 700;
+    }
+    .lives {
+      justify-self: center;
+      display: grid;
+      grid-auto-flow: column;
+      gap: 6px;
+      align-items: center;
+    }
+    .life {
+      width: 12px;
+      height: 12px;
       border-radius: 3px;
-      background: #e9e9e9;
+      background: var(--fg);
       box-shadow: var(--inner);
+      opacity: 1;
     }
-    .life.on{ background: var(--accent); }
+    .life.lost { opacity: .18; }
+    .clock {
+      justify-self: end;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      font-size: 14px;
+    }
 
-    .board{
+    /* Timer Bar spec */
+    .timer {
+      width: 100%;
+      height: var(--timer-h);
+      background: var(--track);
+      border-radius: var(--radius-xxl);
+      box-shadow: var(--inner);
+      overflow: hidden;
+      position: relative;
+    }
+    .timer-fill {
+      height: 100%;
+      width: 100%;
+      background: var(--bank-grad);
+      border-radius: var(--radius-xxl);
+      transition: width .2s linear;
+      will-change: width;
+    }
+
+    /* Tile grids (exactly as specified) */
+    .rows {
       display: grid;
       justify-items: center;
-      align-content: start;
-      gap: 10px;
+      gap: 0;
+      margin: 18px 0 10px;
     }
 
-    /* =========================
-       ROWS (SPEC-EXACT SIZING)
-       ========================= */
     .answer, .bank {
       display: inline-grid;
       grid-template-columns: repeat(5, var(--tile));
@@ -131,9 +179,10 @@
       margin-inline: auto;       /* center the block */
       align-items: start;        /* never stretch items vertically */
     }
-    .answer { margin-block-end: var(--row-gap); }
+    .answer { margin-block-end: var(--row-gap); }  /* spacing above the bank */
+    .bank   { margin-block-end: 14px; }            /* tight spacing above controls */
 
-    .slot, .letter{
+    .slot, .letter {
       width: var(--tile);
       height: var(--tile);
       display: grid;
@@ -141,631 +190,547 @@
       border-radius: 16px;
       box-shadow: var(--shadow), var(--inner);
       user-select: none;
-      -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Answer tiles (bottom row) */
-    .slot{ background: var(--tile-bg); }
-    .slot.locked{
-      outline: 2px solid rgba(238,127,178,.9);
-      outline-offset: -2px;
-    }
-
-    /* Bank tiles (top row) */
-    .letter{
-      background: var(--bank-gradient);
-      cursor: pointer;
-    }
-    .letter.used{ opacity: .25; pointer-events: none; filter: saturate(70%); }
-
-    /* Letter typography */
-    .char{
       font-weight: 800;
-      font-size: clamp(22px, 3.2vw, 28px);
       letter-spacing: .5px;
+      font-size: clamp(22px, 3.2vw, 28px);
       text-transform: uppercase;
     }
-    .answer .char{ color: var(--accent); }     /* placed letters per spec */
-    .letter .char{ color: #1b1b1b; }          /* bank letter color */
+
+    .slot {
+      background: var(--tile-bg);
+      color: var(--accent); /* placed letters */
+      border: 1px solid rgba(0,0,0,.04);
+    }
+    .slot.empty {
+      color: transparent; /* keep height */
+    }
+    .slot.locked {
+      outline: 2px solid rgba(238,127,178,.8);
+      color: var(--tile-fg);
+      background: color-mix(in srgb, var(--tile-bg) 85%, #EE7FB2 15%);
+    }
+
+    .letter {
+      background: var(--bank-grad);
+      color: #222;
+      cursor: pointer;
+      transform: translateZ(0);
+    }
+    .letter.used {
+      opacity: .18;
+      pointer-events: none;
+    }
 
     /* Controls */
-    .controls{
-      display: flex;
+    .controls {
+      display: grid;
+      grid-auto-flow: column;
       gap: 12px;
       justify-content: center;
-      padding-top: 6px;
+      padding-bottom: 6px;
     }
-    button.control{
-      flex: 0 0 auto;
+    .btn {
       min-width: 140px;
-      height: 48px;
+      padding: 14px 16px;
       border-radius: 16px;
       border: 0;
-      box-shadow: var(--shadow);
-      background: #fff;
-      color: #111;
+      background: var(--tile-bg);
+      color: var(--fg);
+      box-shadow: var(--shadow), var(--inner);
       font-weight: 700;
-      letter-spacing: .3px;
       cursor: pointer;
     }
-    [data-theme="dark"] button.control{ background: #242833; color: #fff; }
-    button.control:active{ transform: scale(0.98); }
-    button.control:disabled{ opacity: .5; }
+    .btn:active { transform: translateY(1px); }
 
-    .footer{
-      text-align: center;
-      font-size: 12px;
-      color: var(--muted);
-      padding-top: 8px;
+    /* Animations (reduced for motion-sensitive users) */
+    @media (prefers-reduced-motion: reduce) {
+      .timer-fill { transition: none; }
+      .pop, .shake { animation: none !important; }
+    }
+    @keyframes pop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
     }
 
-    /* =========================
-       MODALS
-       ========================= */
-    .modal{
+    .pop { animation: pop .25s ease; }
+    .shake { animation: shake .25s ease; }
+
+    /* Modal */
+    .scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .scrim.show { display: flex; }
+    .modal {
+      width: min(520px, 92vw);
+      background: var(--tile-bg);
+      color: var(--fg);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 20px 18px;
+    }
+    .modal h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .modal p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+    .modal .btn {
+      width: 100%;
+    }
+
+    /* Visually hidden utility */
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* HTTP error overlay */
+    #httpError {
       position: fixed;
       inset: 0;
       display: none;
       align-items: center;
       justify-content: center;
+      background: var(--bg);
       padding: 24px;
-      backdrop-filter: blur(8px);
-      background: color-mix(in oklab, var(--bg), transparent 40%);
-      z-index: 10;
+      text-align: center;
     }
-    .modal.show{ display: flex; }
-    .dialog{
-      width: min(520px, 94vw);
-      border-radius: 20px;
-      padding: 20px;
+    #httpError.show { display: flex; }
+    #httpError .card {
       background: var(--tile-bg);
-      color: var(--fg);
+      padding: 20px;
+      border-radius: 16px;
       box-shadow: var(--shadow);
+      max-width: 520px;
     }
-    .dialog h2{ margin: 0 0 6px; }
-    .dialog p{ margin: 6px 0 12px; color: var(--muted); }
-    .dialog .actions{ display: flex; justify-content: flex-end; gap: 8px; }
-    button.primary{
-      background: var(--accent);
-      color: #fff;
-      border: 0;
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    button.secondary{
-      background: transparent;
-      border: 0;
-      padding: 12px 16px;
-      border-radius: 12px;
-      color: var(--fg);
-      cursor: pointer;
-    }
-
-    /* =========================
-       ANIMATIONS (GPU-friendly)
-       ========================= */
-    .pop{ animation: pop 180ms ease-out; }
-    @keyframes pop{
-      0%{ transform: scale(1); }
-      40%{ transform: scale(1.08); }
-      100%{ transform: scale(1); }
-    }
-
-    .shake{
-      animation: shake 320ms cubic-bezier(.36,.07,.19,.97) both;
-      transform: translate3d(0,0,0);
-      backface-visibility: hidden;
-      perspective: 1000px;
-    }
-    @keyframes shake{
-      10%, 90% { transform: translateX(-2px); }
-      20%, 80% { transform: translateX(4px); }
-      30%, 50%, 70% { transform: translateX(-6px); }
-      40%, 60% { transform: translateX(6px); }
-    }
-
-    .hidden{ display: none !important; }
-    .visually-hidden{
-      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0,0,1px,1px); border: 0;
+    #httpError code {
+      background: #00000014;
+      padding: 2px 6px;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <h1>JUMBL</h1>
-      <button class="theme-toggle" aria-label="Toggle theme" id="themeToggle">🌗</button>
-    </header>
-
-    <div class="status">
-      <div class="left">Level <span id="level">1</span></div>
-      <div class="center">
-        <div class="lives" id="lives"></div>
-      </div>
-      <div class="right timer" id="timer">00:25</div>
+  <div id="httpError" role="alert" aria-live="assertive">
+    <div class="card">
+      <h2>Can’t load word lists</h2>
+      <p>Serve files over HTTP (e.g., <code>python3 -m http.server</code>) to load <em>answers.txt</em> and <em>guesses.txt</em>.</p>
     </div>
-
-    <div class="board">
-      <!-- Top row: Bank -->
-      <div class="bank" id="bank" aria-label="Letter bank"></div>
-      <!-- Bottom row: Answer -->
-      <div class="answer" id="answer" aria-label="Answer slots"></div>
-    </div>
-
-    <div class="controls">
-      <button class="control" id="shuffleBtn" type="button">⤮ Shuffle</button>
-      <button class="control" id="backBtn" type="button">⌫ Back</button>
-    </div>
-
-    <div class="footer">Single-file prototype • serve over HTTP to load word lists</div>
   </div>
 
-  <!-- Intro modal -->
-  <div class="modal" id="introModal" aria-modal="true" role="dialog">
-    <div class="dialog">
-      <h2>Welcome to JUMBL</h2>
-      <p>Tap letters to build the 5-letter word. Fill all slots to submit automatically.</p>
-      <ul style="margin: 0 0 12px 18px; color: var(--muted);">
-        <li>3 lives. Wrong <em>valid</em> word: -1 life &amp; correct letters lock.</li>
-        <li>Invalid word: shake &amp; clear (no life lost).</li>
-        <li>Timer 25s. At 0: -1 life, bank reshuffles, locked letters stay.</li>
-      </ul>
-      <div class="actions">
-        <button class="primary" id="playBtn" type="button">Play ▶</button>
+  <div class="wrap">
+    <header>
+      <h1>JUMBL</h1>
+      <button class="theme-toggle" id="themeBtn" aria-pressed="false" title="Toggle theme">◐</button>
+    </header>
+
+    <section class="status">
+      <div class="status-row">
+        <div class="level" id="level">Level 1</div>
+        <div class="lives" id="lives" aria-label="Lives"></div>
+        <div class="clock" id="clock">00:25</div>
       </div>
-    </div>
+
+      <div class="timer" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25" aria-label="Time remaining">
+        <div class="timer-fill" id="timerFill" style="width:100%"></div>
+      </div>
+      <div class="visually-hidden" aria-live="polite" id="timeLive">25 seconds remaining</div>
+    </section>
+
+    <section class="rows" id="rows">
+      <div class="answer" id="answerRow" aria-label="Answer row"></div>
+      <div class="bank" id="bankRow" aria-label="Letter bank"></div>
+    </section>
+
+    <nav class="controls">
+      <button class="btn" id="shuffleBtn">⤮ Shuffle</button>
+      <button class="btn" id="clearBtn">⌦ Clear all</button>
+    </nav>
   </div>
 
   <!-- Game Over modal -->
-  <div class="modal" id="gameOverModal" aria-modal="true" role="dialog">
-    <div class="dialog">
-      <h2>no more lives</h2>
-      <p id="runSummary"></p>
-      <div class="actions">
-        <button class="primary" id="retryBtn" type="button">try again ➜</button>
-      </div>
+  <div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="goTitle" aria-describedby="goDesc">
+    <div class="modal">
+      <h2 id="goTitle">no more lives</h2>
+      <p id="goDesc">—</p>
+      <button class="btn" id="againBtn">try again ➜</button>
     </div>
   </div>
 
   <script>
-    (() => {
-      'use strict';
+    ;(() => {
+      // ---------- State ----------
+      const TIMER_MS = 25000;
+      const TICK_MS = 200;
 
-      /* =========================
-         DATA & STATE
-         ========================= */
       let ANSWERS = [];
       let ACCEPTED_SET = new Set();
 
-      const STATE = {
-        answerWord: '',
-        locked: [false,false,false,false,false],
-        current: ['', '', '', '', ''],
-        placedIndex: [null,null,null,null,null], // bank tile id per slot
-        lives: 3,
-        level: 1,
-        deadline: 0,    // timestamp ms
-        timerId: null,  // interval id
-        bank: [],       // [{id, ch, used}]
-        runStart: 0     // timestamp when a run begins
+      let answerWord = "";
+      let locked = Array(5).fill(false);
+      let current = Array(5).fill("");
+      let placedIndex = Array(5).fill(-1); // maps answer slot -> bank index
+      let bank = []; // [{ch, used, iOriginal}]
+      let lives = 3;
+      let level = 1;
+      let deadline = 0;
+      let tickId = 0;
+      let runStart = 0;
+      let animating = false;
+      let gameActive = false;
+
+      // ---------- DOM ----------
+      const levelEl = document.getElementById("level");
+      const livesEl = document.getElementById("lives");
+      const clockEl = document.getElementById("clock");
+      const timerFill = document.getElementById("timerFill");
+      const timeLive = document.getElementById("timeLive");
+      const answerRow = document.getElementById("answerRow");
+      const bankRow = document.getElementById("bankRow");
+      const shuffleBtn = document.getElementById("shuffleBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const scrim = document.getElementById("scrim");
+      const againBtn = document.getElementById("againBtn");
+      const themeBtn = document.getElementById("themeBtn");
+      const httpError = document.getElementById("httpError");
+
+      // ---------- Utilities ----------
+      const fmt = (ms) => {
+        const s = Math.max(0, Math.ceil(ms / 1000));
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
       };
 
-      let UNIQUE_ID = 1;
+      const randInt = (n) => Math.floor(Math.random() * n);
 
-      /* =========================
-         HELPERS
-         ========================= */
-      const qs  = (s, r=document) => r.querySelector(s);
-      const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
-      const choice = (arr) => arr[(Math.random() * arr.length) | 0];
-
-      function shuffle(arr){
-        for(let i = arr.length - 1; i > 0; i--){
-          const j = (Math.random() * (i+1)) | 0;
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-      }
-
-      function formatTime(ms){
-        const total = Math.max(0, Math.ceil(ms/1000));
-        const m = Math.floor(total / 60);
-        const s = total % 60;
-        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      }
-      const now = () => Date.now();
-      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
-      function playPop(){
-        const el = qs('#answer');
-        el.classList.remove('pop');
-        void el.offsetWidth;
-        el.classList.add('pop');
-      }
-      function playShake(){
-        const el = qs('#answer');
-        el.classList.remove('shake');
-        void el.offsetWidth;
-        el.classList.add('shake');
-        setTimeout(() => el.classList.remove('shake'), 360);
-      }
-
-      /* =========================
-         LOAD WORD LISTS
-         ========================= */
-      async function loadWordLists(){
-        const parseList = (text) => {
-          const out = [];
-          for (const raw of text.split(/\r?\n/)) {
-            const line = raw.trim();
-            if (!line) continue;
-            const word = line.toUpperCase().replace(/[^A-Z]/g, '');
-            if (word.length === 5) out.push(word);
+      const shuffle = (arr, indices = null) => {
+        if (indices) {
+          for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const a = indices[i], b = indices[j];
+            [arr[a], arr[b]] = [arr[b], arr[a]];
           }
-          return out;
-        };
-
-        const [answersResp, guessesResp] = await Promise.all([
-          fetch('answers.txt', { cache: 'no-store' }),
-          fetch('guesses.txt', { cache: 'no-store' })
-        ]);
-        if (!answersResp.ok) throw new Error('Failed to load answers.txt');
-        if (!guessesResp.ok) throw new Error('Failed to load guesses.txt');
-
-        const answersText = await answersResp.text();
-        const guessesText = await guessesResp.text();
-
-        ANSWERS = parseList(answersText);
-        const accepted = parseList(guessesText);
-        ACCEPTED_SET = new Set(accepted);
-
-        if (!Array.isArray(ANSWERS) || ANSWERS.length === 0) {
-          throw new Error('answers.txt appears empty or invalid.');
-        }
-        // Ensure all answers are in accepted set (safety)
-        for (const a of ANSWERS) {
-          if (!ACCEPTED_SET.has(a)) ACCEPTED_SET.add(a);
-        }
-      }
-
-      /* =========================
-         GAME LIFECYCLE
-         ========================= */
-      async function boot(){
-        try{
-          applySavedTheme();
-          await loadWordLists();
-          showModal('introModal', true);
-        }catch(err){
-          alert('Error loading word lists: ' + err.message + '\nServe files over HTTP and place answers.txt & guesses.txt alongside index.html.');
-          console.error(err);
-        }
-      }
-
-      function startGame(){
-        resetStateForRun();
-        pickNewAnswer();
-        renderAll();
-        startTimer(true);
-      }
-
-      function resetStateForRun(){
-        STATE.lives = 3;
-        STATE.level = 1;
-        STATE.runStart = now();
-        resetRoundState();
-      }
-
-      function resetRoundState(){
-        STATE.locked = [false,false,false,false,false];
-        STATE.current = ['', '', '', '', ''];
-        STATE.placedIndex = [null,null,null,null,null];
-        STATE.bank = [];
-        UNIQUE_ID = 1;
-      }
-
-      function pickNewAnswer(){
-        STATE.answerWord = choice(ANSWERS);
-        buildBankFromAnswer();
-      }
-
-      function buildBankFromAnswer(){
-        const letters = STATE.answerWord.split('');
-        const objs = letters.map(ch => ({ id: UNIQUE_ID++, ch, used: false }));
-        shuffle(objs);
-        STATE.bank = objs;
-      }
-
-      function nextLevel(){
-        STATE.level += 1;
-        resetRoundState();
-        pickNewAnswer();
-        renderAll();
-        startTimer(true);
-      }
-
-      /* =========================
-         TIMER
-         ========================= */
-      function startTimer(fullRefill){
-        if (STATE.timerId) clearInterval(STATE.timerId);
-        const full = 25000; // 25s
-        const remain = fullRefill ? full : Math.max(0, STATE.deadline - now());
-        STATE.deadline = now() + (fullRefill ? full : remain);
-        renderTimer();
-        STATE.timerId = setInterval(tick, 200);
-      }
-
-      function tick(){
-        const msLeft = STATE.deadline - now();
-        if (msLeft <= 0){
-          clearInterval(STATE.timerId);
-          // Time out: -1 life, reshuffle unused bank letters, keep locks, refill timer
-          decrementLife();
-          if (STATE.lives <= 0){
-            gameOver();
-            return;
+        } else {
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
           }
-          reshuffleUnusedBank();
-          renderAll();
-          STATE.deadline = now() + 25000;
-          renderTimer();
-          STATE.timerId = setInterval(tick, 200);
-          return;
         }
-        renderTimer(msLeft);
-      }
+      };
 
-      function renderTimer(msLeft = STATE.deadline - now()){
-        qs('#timer').textContent = formatTime(msLeft);
-      }
+      const setTheme = (theme) => {
+        document.documentElement.setAttribute("data-theme", theme);
+        themeBtn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+        localStorage.setItem("jumbl-theme", theme);
+      };
+      const toggleTheme = () => {
+        const cur = document.documentElement.getAttribute("data-theme") || "light";
+        setTheme(cur === "light" ? "dark" : "light");
+      };
 
-      function decrementLife(){
-        STATE.lives = clamp(STATE.lives - 1, 0, 3);
-        renderLives();
-      }
+      // ---------- Rendering ----------
+      function renderStatus(msLeft = TIMER_MS) {
+        levelEl.textContent = `Level ${level}`;
 
-      /* =========================
-         RENDER
-         ========================= */
-      function renderAll(){
-        renderStatus();
-        renderRows();
-        renderControls();
-      }
-
-      function renderStatus(){
-        qs('#level').textContent = STATE.level;
-        renderLives();
-        renderTimer();
-      }
-
-      function renderLives(){
-        const livesEl = qs('#lives');
-        livesEl.innerHTML = '';
-        for (let i = 0; i < 3; i++){
-          const div = document.createElement('div');
-          div.className = 'life' + (i < STATE.lives ? ' on' : '');
-          livesEl.appendChild(div);
-        }
-      }
-
-      function renderRows(){
-        // Answer row
-        const ansEl = qs('#answer');
-        ansEl.innerHTML = '';
-        for (let i = 0; i < 5; i++){
-          const slot = document.createElement('div');
-          slot.className = 'slot' + (STATE.locked[i] ? ' locked' : '');
-          const ch = STATE.current[i];
-          if (ch){
-            const span = document.createElement('span');
-            span.className = 'char';
-            span.textContent = ch;
-            slot.appendChild(span);
-          }
-          ansEl.appendChild(slot);
+        // Lives (3 small squares)
+        livesEl.innerHTML = "";
+        for (let i = 0; i < 3; i++) {
+          const d = document.createElement("div");
+          d.className = "life" + (i < lives ? "" : " lost");
+          livesEl.appendChild(d);
         }
 
-        // Bank row
-        const bankEl = qs('#bank');
-        bankEl.innerHTML = '';
-        STATE.bank.forEach((obj, idx) => {
-          const tile = document.createElement('button');
-          tile.className = 'letter' + (obj.used ? ' used' : '');
-          tile.type = 'button';
-          tile.setAttribute('aria-label', obj.used ? `${obj.ch} used` : `Use ${obj.ch}`);
-          tile.addEventListener('click', () => onLetterTap(idx));
-          const span = document.createElement('span');
-          span.className = 'char';
-          span.textContent = obj.ch;
-          tile.appendChild(span);
-          bankEl.appendChild(tile);
+        clockEl.textContent = fmt(msLeft);
+        const sLeft = Math.max(0, Math.ceil(msLeft / 1000));
+        timeLive.textContent = `${sLeft} seconds remaining`;
+        const p = Math.max(0, Math.min(1, msLeft / TIMER_MS));
+        timerFill.style.width = (p * 100).toFixed(1) + "%";
+        const bar = timerFill.parentElement;
+        bar.setAttribute("aria-valuenow", String(Math.ceil(msLeft/1000)));
+      }
+
+      function renderRows() {
+        // Answer row (top)
+        answerRow.innerHTML = "";
+        for (let i = 0; i < 5; i++) {
+          const ch = current[i] || "";
+          const d = document.createElement("div");
+          d.className = "slot" + (locked[i] ? " locked" : (ch ? "" : " empty"));
+          d.textContent = ch || "•";
+          answerRow.appendChild(d);
+        }
+
+        // Bank row (bottom)
+        bankRow.innerHTML = "";
+        bank.forEach((item, idx) => {
+          const d = document.createElement("button");
+          d.type = "button";
+          d.className = "letter" + (item.used ? " used" : "");
+          d.textContent = item.ch;
+          d.addEventListener("click", () => onLetterTap(idx));
+          bankRow.appendChild(d);
         });
       }
 
-      function renderControls(){
-        // Enable backspace only if a non-locked slot has a letter
-        const hasPlaced = STATE.current.some((ch, i) => ch && !STATE.locked[i]);
-        qs('#backBtn').disabled = !hasPlaced;
-      }
-
-      /* =========================
-         INPUT HANDLERS
-         ========================= */
-      function onLetterTap(bankIdx){
-        const tile = STATE.bank[bankIdx];
-        if (!tile || tile.used) return;
-
-        const slotIdx = findNextFreeSlot();
-        if (slotIdx === -1) return;
-
-        placeLetter(slotIdx, bankIdx);
-        renderAll();
-        autoSubmitIfFull();
-      }
-
-      function findNextFreeSlot(){
-        for (let i = 0; i < 5; i++){
-          if (!STATE.locked[i] && !STATE.current[i]) return i;
-        }
-        return -1;
-      }
-
-      function placeLetter(slotIdx, bankIdx){
-        const tile = STATE.bank[bankIdx];
-        STATE.current[slotIdx] = tile.ch;
-        STATE.placedIndex[slotIdx] = tile.id;
-        tile.used = true;
-      }
-
-      function onBackspace(){
-        for (let i = 4; i >= 0; i--){
-          if (!STATE.locked[i] && STATE.current[i]){
-            const id = STATE.placedIndex[i];
-            const bankIdx = STATE.bank.findIndex(o => o.id === id);
-            if (bankIdx !== -1) STATE.bank[bankIdx].used = false;
-            STATE.current[i] = '';
-            STATE.placedIndex[i] = null;
-            renderAll();
-            break;
-          }
-        }
-      }
-
-      function onShuffle(){
-        refreshShuffle();
+      function renderAll(msLeft = TIMER_MS) {
+        renderStatus(msLeft);
         renderRows();
       }
 
-      function refreshShuffle(){
-        // Shuffle only unused bank tiles; keep used tiles in place
-        const unused = STATE.bank.filter(o => !o.used);
-        shuffle(unused);
-        const newBank = [];
-        let ptr = 0;
-        for (const b of STATE.bank){
-          if (b.used) newBank.push(b);
-          else newBank.push(unused[ptr++]);
+      // ---------- Game Flow ----------
+      function buildBankFromAnswer() {
+        bank = answerWord.split("").map((ch, i) => ({ ch, used: false, iOriginal: i }));
+        shuffle(bank);
+      }
+
+      function startTimer(refill = true) {
+        if (tickId) clearInterval(tickId);
+        if (refill) deadline = Date.now() + TIMER_MS;
+        renderStatus(TIMER_MS);
+        tickId = setInterval(tick, TICK_MS);
+      }
+
+      function tick() {
+        const now = Date.now();
+        const msLeft = deadline - now;
+        if (msLeft <= 0) {
+          // Timeout rule
+          loseLife();
+          if (lives <= 0) return;
+          // Reshuffle only unused/unlocked bank letters
+          refreshShuffle();
+          // Refill timer
+          deadline = Date.now() + TIMER_MS;
+          renderAll(TIMER_MS);
+        } else {
+          renderStatus(msLeft);
         }
-        STATE.bank = newBank;
       }
 
-      function reshuffleUnusedBank(){
-        refreshShuffle();
+      function pickAnswer() {
+        answerWord = ANSWERS[randInt(ANSWERS.length)];
       }
 
-      function autoSubmitIfFull(){
-        // Require all 5 positions filled (locked count + current filled == 5)
-        const filledCount = STATE.current.filter(Boolean).length + STATE.locked.filter(Boolean).length;
-        if (filledCount !== 5) return;
-
-        const guess = STATE.current.map((ch, i) => ch || (STATE.locked[i] ? STATE.answerWord[i] : '')).join('');
-        evaluateGuess(guess);
+      function startGame() {
+        gameActive = true;
+        runStart = Date.now();
+        lives = 3;
+        level = 1;
+        locked = Array(5).fill(false);
+        current = Array(5).fill("");
+        placedIndex = Array(5).fill(-1);
+        pickAnswer();
+        buildBankFromAnswer();
+        renderAll(TIMER_MS);
+        startTimer(true);
       }
 
-      function evaluateGuess(guess){
-        const answer = STATE.answerWord;
+      function nextLevel() {
+        level += 1;
+        locked = Array(5).fill(false);
+        current = Array(5).fill("");
+        placedIndex = Array(5).fill(-1);
+        pickAnswer();
+        buildBankFromAnswer();
+        renderAll(TIMER_MS);
+        startTimer(true);
+      }
 
-        if (guess === answer){
-          playPop();
-          setTimeout(() => nextLevel(), 220);
+      function onLetterTap(bi) {
+        if (!gameActive) return;
+        const item = bank[bi];
+        if (item.used) return;
+
+        // Find next unlocked empty answer slot
+        let slot = -1;
+        for (let i = 0; i < 5; i++) {
+          if (!locked[i] && !current[i]) { slot = i; break; }
+        }
+        if (slot === -1) return;
+
+        current[slot] = item.ch;
+        placedIndex[slot] = bi;
+        item.used = true;
+        renderRows();
+        autoSubmitIfFull();
+      }
+
+      function onClearAll() {
+        if (!gameActive) return;
+        for (let i = 0; i < 5; i++) {
+          if (!locked[i] && current[i]) {
+            const bi = placedIndex[i];
+            if (bi !== -1) bank[bi].used = false;
+            current[i] = "";
+            placedIndex[i] = -1;
+          }
+        }
+        renderRows();
+      }
+
+      function refreshShuffle() {
+        // Shuffle only unused (not used) bank letters; keep used in place
+        const freeIdx = [];
+        for (let i = 0; i < bank.length; i++) if (!bank[i].used) freeIdx.push(i);
+        shuffle(bank, freeIdx);
+        renderRows();
+      }
+
+      function loseLife() {
+        lives -= 1;
+        renderStatus(0);
+        if (lives <= 0) {
+          gameOver();
+        }
+      }
+
+      function autoSubmitIfFull() {
+        // all filled if every slot either locked or has a letter
+        const full = current.every((ch, i) => locked[i] || ch);
+        if (!full) return;
+        if (animating) return;
+
+        const guess = current.map((ch, i) => (ch || (locked[i] ? answerWord[i] : ""))).join("");
+        if (guess.length !== 5) return;
+
+        if (guess === answerWord) {
+          // Correct
+          animating = true;
+          answerRow.classList.remove("shake");
+          answerRow.classList.add("pop");
+          setTimeout(() => {
+            answerRow.classList.remove("pop");
+            animating = false;
+            nextLevel();
+          }, 250);
           return;
         }
 
-        if (ACCEPTED_SET.has(guess)){
-          // Valid but wrong: -1 life; lock correct positions; clear rest
-          decrementLife();
-          if (STATE.lives <= 0){
-            gameOver();
-            return;
-          }
+        if (ACCEPTED_SET.has(guess)) {
+          // Valid but wrong -> lose life, lock correct positions, clear the rest, continue
+          loseLife();
+          if (lives <= 0) return; // Game over interrupts
           lockCorrectFrom(guess);
-          renderAll();
-          return;
-        }
-
-        // Invalid: shake + clear (no life lost)
-        playShake();
-        for (let i = 0; i < 5; i++){
-          if (!STATE.locked[i] && STATE.current[i]){
-            const id = STATE.placedIndex[i];
-            const bankIdx = STATE.bank.findIndex(o => o.id === id);
-            if (bankIdx !== -1) STATE.bank[bankIdx].used = false;
-            STATE.current[i] = '';
-            STATE.placedIndex[i] = null;
-          }
-        }
-        renderAll();
-      }
-
-      function lockCorrectFrom(guess){
-        for (let i = 0; i < 5; i++){
-          if (guess[i] === STATE.answerWord[i]){
-            STATE.locked[i] = true; // keep letter in place and bank tile "used"
-          } else {
-            if (!STATE.locked[i] && STATE.current[i]){
-              const id = STATE.placedIndex[i];
-              const bankIdx = STATE.bank.findIndex(o => o.id === id);
-              if (bankIdx !== -1) STATE.bank[bankIdx].used = false;
-              STATE.current[i] = '';
-              STATE.placedIndex[i] = null;
+          // Clear non-locked slots & free their bank indices
+          for (let i = 0; i < 5; i++) {
+            if (!locked[i] && current[i]) {
+              const bi = placedIndex[i];
+              if (bi !== -1) bank[bi].used = false;
+              current[i] = "";
+              placedIndex[i] = -1;
             }
           }
+          renderRows();
+        } else {
+          // Invalid -> shake + clear, no life loss
+          animating = true;
+          answerRow.classList.remove("pop");
+          answerRow.classList.add("shake");
+          setTimeout(() => {
+            answerRow.classList.remove("shake");
+            animating = false;
+          }, 250);
+          onClearAll();
         }
       }
 
-      function gameOver(){
-        if (STATE.timerId) clearInterval(STATE.timerId);
-        const durationMs = now() - STATE.runStart;
-        const mins = Math.floor(durationMs / 60000);
-        const secs = Math.floor((durationMs % 60000) / 1000);
-        const runtime = `${mins}m ${secs}s`;
-        qs('#runSummary').textContent = `Run time: ${runtime} · Levels completed: ${STATE.level - 1}`;
-        showModal('gameOverModal', true);
+      function lockCorrectFrom(guess) {
+        for (let i = 0; i < 5; i++) {
+          if (guess[i] === answerWord[i]) {
+            locked[i] = true;
+            // Keep the letter in place; bank index stays used
+          }
+        }
       }
 
-      /* =========================
-         MODALS & THEME
-         ========================= */
-      function showModal(id, show=true){
-        const m = qs('#' + id);
-        m.classList.toggle('show', show);
+      function gameOver() {
+        gameActive = false;
+        if (tickId) clearInterval(tickId);
+        const runMs = Date.now() - runStart;
+        const s = Math.round(runMs / 1000);
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        const runStr = `${m}m ${sec}s`;
+        const msg = `run time ${runStr} · levels completed ${level - 1}`;
+        document.getElementById("goDesc").textContent = msg;
+        scrim.classList.add("show");
+        document.body.setAttribute("inert", "");
+        setTimeout(() => againBtn.focus(), 0);
       }
 
-      function applySavedTheme(){
-        const stored = localStorage.getItem('jumbl-theme');
-        const theme = stored === 'dark' ? 'dark' : 'light';
-        setTheme(theme);
-      }
-      function setTheme(theme){
-        document.body.setAttribute('data-theme', theme);
-        const themeColor = theme === 'dark' ? '#0e0f13' : '#ffffff';
-        qs('#theme-color').setAttribute('content', themeColor);
-      }
-      function toggleTheme(){
-        const cur = document.body.getAttribute('data-theme') || 'light';
-        const next = cur === 'light' ? 'dark' : 'light';
-        setTheme(next);
-        localStorage.setItem('jumbl-theme', next);
+      function hideGameOver() {
+        scrim.classList.remove("show");
+        document.body.removeAttribute("inert");
       }
 
-      /* =========================
-         EVENTS
-         ========================= */
-      window.addEventListener('load', boot);
-      qs('#themeToggle').addEventListener('click', toggleTheme);
-      qs('#playBtn').addEventListener('click', () => { showModal('introModal', false); startGame(); });
-      qs('#retryBtn').addEventListener('click', () => { showModal('gameOverModal', false); startGame(); });
-      qs('#shuffleBtn').addEventListener('click', onShuffle);
-      qs('#backBtn').addEventListener('click', onBackspace);
+      // ---------- Data Loading ----------
+      async function loadWordLists() {
+        try {
+          const [aRes, gRes] = await Promise.all([
+            fetch("answers.txt"),
+            fetch("guesses.txt")
+          ]);
+          if (!aRes.ok || !gRes.ok) throw new Error("Fetch failed");
+          const [aTxt, gTxt] = await Promise.all([aRes.text(), gRes.text()]);
+          ANSWERS = aTxt.split(/\r?\n/).map(s => s.trim().toUpperCase()).filter(Boolean);
+          const guesses = gTxt.split(/\r?\n/).map(s => s.trim().toUpperCase()).filter(Boolean);
+          ACCEPTED_SET = new Set(guesses);
+          if (ANSWERS.length === 0 || ACCEPTED_SET.size === 0) throw new Error("Empty lists");
+          // Ensure all answers are accepted
+          for (const w of ANSWERS) ACCEPTED_SET.add(w);
+          httpError.classList.remove("show");
+          startGame();
+        } catch (err) {
+          console.error(err);
+          httpError.classList.add("show");
+        }
+      }
 
-      // Optional: keep taps snappy on iOS
-      qsa('button').forEach(b => b.addEventListener('touchend', () => {}, { passive: true }));
+      // ---------- Events ----------
+      shuffleBtn.addEventListener("click", refreshShuffle);
+      clearBtn.addEventListener("click", onClearAll);
+      againBtn.addEventListener("click", () => { hideGameOver(); startGame(); });
+      themeBtn.addEventListener("click", toggleTheme);
+
+      // Keyboard shortcuts (desktop)
+      window.addEventListener("keydown", (ev) => {
+        if (ev.repeat) return;
+        const tag = (ev.target && ev.target.tagName) || "";
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || ev.isComposing) return;
+        if (ev.code === "Space") { ev.preventDefault(); refreshShuffle(); }
+        if (ev.code === "Backspace" || ev.code === "Delete") { ev.preventDefault(); onClearAll(); }
+      });
+
+      // Theme boot
+      const savedTheme = localStorage.getItem("jumbl-theme");
+      if (savedTheme === "dark" || savedTheme === "light") setTheme(savedTheme);
+      else setTheme("light");
+
+      // Go!
+      loadWordLists();
     })();
   </script>
 </body>
