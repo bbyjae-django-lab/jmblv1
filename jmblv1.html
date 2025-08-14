@@ -115,15 +115,15 @@
     .jiggle{ animation: jiggle .26s ease both; }
     .shudder{ animation: shudder .8s ease both; }
 
-    /* Exaggerated win pop (only on correct answer) */
-    @keyframes popwin { 
-      0%   { transform: scale(.85) } 
-      60%  { transform: scale(1.12) }  /* increase this to 1.15+ for more oomph */
-      100% { transform: scale(1) } 
-    }
-    .popwin{ animation: popwin .34s cubic-bezier(.2,.7,.2,1) both; } /* lengthen for slower pop */
+    
 
-    @media (prefers-reduced-motion: reduce){
+    
+
+    /* Exaggerated win pop (only on correct answer) */
+    @keyframes popwin { 0%{transform:scale(.85)} 60%{transform:scale(1.12)} 100%{transform:scale(1)} }
+    .popwin{ animation: popwin .34s cubic-bezier(.2,.7,.2,1) both; }
+
+@media (prefers-reduced-motion: reduce){
       .pop,.shake,.jiggle,.shudder{ animation-duration:.05s; animation-iteration-count:1; }
       .fill{ transition:none; }
     }
@@ -180,8 +180,8 @@
 
     <!-- 7) Controls -->
     <div class="controls">
-      <button class="btn" id="btnShuffle" aria-label="Shuffle letters">Shuffle</button>
-      <button class="btn" id="btnClear" aria-label="Clear all">Clear all</button>
+      <button class="btn" id="btnShuffle" aria-label="Shuffle letters">Shuffle ⤮</button>
+      <button class="btn" id="btnClear" aria-label="Clear all">Clear all ⌫</button>
     </div>
 
     <!-- spacer -->
@@ -206,12 +206,12 @@
   <div class="backdrop" id="introBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
       <h2 id="rulesTitle">RULES</h2>
-      <p>Use the jumbled letters to make a 5 letter word.<br>
+      <p>Use the jumbled letters to make a real 5-letter word.<br>
          Beat the clock to level up and refill the timer.<br>
          If you enter a real word that's not the answer, you lose a life; correct letters lock in place.<br>
          If the timer hits zero, we reveal the word and you lose a life.</p>
       <p>25 seconds per word • 3 lives</p>
-      <p>Tip: Shuffle letters • Clear all</p>
+      <p>Tip: ⤮ Shuffle letters • ⌫ Clear all</p>
       <div class="actions">
         <button class="btn" id="btnPlay">Play</button>
       </div>
@@ -221,10 +221,10 @@
   <!-- Game Over modal -->
   <div class="backdrop" id="gameoverBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="goTitle">
-      <h2 id="goTitle">Game over</h2>
-      <p id="goBody">You reached level 0</p>
+      <h2 id="goTitle">Game Over</h2>
+      <p id="goBody">You reached level 0.</p>
       <div class="actions">
-        <button class="btn" id="btnAgain">Play again</button>
+        <button class="btn" id="btnAgain">Try again ➜</button>
       </div>
     </div>
   </div>
@@ -297,6 +297,7 @@
   }
   function announce(txt){ announcer.textContent = txt; }
   function setBackdrop(backdrop, show){ backdrop.classList.toggle('show', !!show); if(show){
+      // Focus first button in modal if present
       const btn = backdrop.querySelector('button'); if(btn) setTimeout(()=>btn.focus(), 0);
     } }
 
@@ -360,6 +361,7 @@
       state.ACCEPTED_SET = new Set(guesses);
       state.listsLoaded = true;
       loadingText.textContent = `Loaded ${answers.length} answers, ${guesses.length} guesses.`;
+      // Small delay to show status then proceed
       setTimeout(()=>{ setBackdrop(loadingBackdrop, false); setBackdrop(introBackdrop, true); }, 400);
     }catch(err){
       loadingText.innerHTML = 'Could not load word lists.\n\nTip: Serve files over HTTP (e.g., <code>python3 -m http.server</code>) and ensure <code>answers.txt</code> and <code>guesses.txt</code> are beside <code>index.html</code>.';
@@ -415,6 +417,7 @@
     pb.setAttribute('aria-valuenow', String(clamp(remainSec,0,COUNTDOWN_SECONDS)));
     if(remainSec !== state.lastAnnouncedSec && remainSec >= 0){
       state.lastAnnouncedSec = remainSec;
+      // announce at most ~1Hz
       announce(`${remainSec} seconds remaining`);
     }
   }
@@ -454,6 +457,7 @@
   function nextWord(increment){
     state.inputsDisabled = false;
     if(increment) state.level++;
+    // pick random distinct answer
     state.answerWord = state.ANSWER_POOL[randInt(state.ANSWER_POOL.length)];
     state.bank = buildBankFrom(state.answerWord);
     state.current = Array(5).fill('');
@@ -487,13 +491,16 @@
     state.current[slot] = entry.ch;
     state.placedIndex[slot] = bankIndex;
     entry.used = true;
-    renderAnswerRow(); // ensures letter becomes visible (removes .empty)
 
+    // Re-render so the newly filled tile loses .empty (which hides text)
+    renderAnswerRow();
+
+    // pop that tile
     const node = answerRow.children[slot];
     node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop');
 
-    autoSubmitIfFull();
     renderBankRow();
+    autoSubmitIfFull();
   }
 
   function onShuffle(){
@@ -502,6 +509,7 @@
     const unusedLetters = unusedIndices.map(i=> state.bank[i].ch);
     shuffleArray(unusedLetters);
     unusedIndices.forEach((idx,k)=>{ state.bank[idx].ch = unusedLetters[k]; });
+    // jiggle bank
     bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
     renderBankRow();
   }
@@ -526,14 +534,17 @@
   function evaluateGuess(guess){
     if(state.isAnimating) return;
     if(guess === state.answerWord){
+      // Correct
       stopTimer();
       celebrateCorrect();
     } else if(state.ACCEPTED_SET.has(guess)){
+      // Valid but wrong -> life -1, lock correct positions, clear the rest
       state.lives = Math.max(0, state.lives - 1);
       for(let i=0;i<5;i++){
         if(guess[i] === state.answerWord[i]){
-          state.locked[i] = true;
+          state.locked[i] = true; // keep placedIndex[i] to keep bank index consumed
         }else{
+          // free bank for those slots
           const bi = state.placedIndex[i];
           if(bi !== null) state.bank[bi].used = false;
           state.current[i] = '';
@@ -543,6 +554,7 @@
       renderUI();
       if(state.lives === 0){ gameOver(); }
     } else {
+      // Invalid -> shake + clear non-locked (no life loss)
       answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
       for(let i=0;i<5;i++){
         if(state.locked[i]) continue;
@@ -576,9 +588,11 @@
 
   function onTimeout(){
     state.lives = Math.max(0, state.lives - 1);
+    // Reveal word and shudder (motion only)
     state.inputsDisabled = true;
     for(let i=0;i<5;i++){
       state.current[i] = state.answerWord[i];
+      // keep locked flags as-is; they will be reset in nextWord
     }
     renderUI();
     answerRow.classList.remove('shudder'); void answerRow.offsetWidth; answerRow.classList.add('shudder');
@@ -596,7 +610,7 @@
     const secs = Math.round((Date.now() - state.runStartAt)/1000);
     const mm = String(Math.floor(secs/60)).padStart(2,'0');
     const ss = String(secs%60).padStart(2,'0');
-    goBody.textContent = `You reached level ${levelsCompleted}. ${(secs>0)?`Run time ${mm}:${ss}.`:''}`;
+    goBody.innerHTML = `You reached level ${levelsCompleted}.${secs>0?('<br>Run time ' + mm + ':' + ss + '.'):''}`;
     setBackdrop(gameoverBackdrop, true);
   }
 
@@ -604,12 +618,14 @@
   // 10) Keyboard (desktop)
   // ------------------------------
   function handleKey(e){
+    // Disable during modals or reveal
     if(loadingBackdrop.classList.contains('show') || introBackdrop.classList.contains('show') || gameoverBackdrop.classList.contains('show') || state.inputsDisabled){ return; }
     const k = e.key;
     if(k === ' '){ e.preventDefault(); onShuffle(); return; }
     if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClearAll(); return; }
     const m = k.toUpperCase();
     if(m.length === 1 && m >= 'A' && m <= 'Z'){
+      // place leftmost matching unused bank entry
       for(let i=0;i<state.bank.length;i++){
         const b = state.bank[i];
         if(!b.used && b.ch === m){ onLetterTap(i); break; }
