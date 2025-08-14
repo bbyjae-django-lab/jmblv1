@@ -115,6 +115,14 @@
     .jiggle{ animation: jiggle .26s ease both; }
     .shudder{ animation: shudder .8s ease both; }
 
+    /* Exaggerated win pop (only on correct answer) */
+    @keyframes popwin { 
+      0%   { transform: scale(.85) } 
+      60%  { transform: scale(1.12) }  /* increase this to 1.15+ for more oomph */
+      100% { transform: scale(1) } 
+    }
+    .popwin{ animation: popwin .34s cubic-bezier(.2,.7,.2,1) both; } /* lengthen for slower pop */
+
     @media (prefers-reduced-motion: reduce){
       .pop,.shake,.jiggle,.shudder{ animation-duration:.05s; animation-iteration-count:1; }
       .fill{ transition:none; }
@@ -198,7 +206,7 @@
   <div class="backdrop" id="introBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
       <h2 id="rulesTitle">RULES</h2>
-      <p>Use the jumbled letters to make a real 5-letter word.<br>
+      <p>Use the jumbled letters to make a 5 letter word.<br>
          Beat the clock to level up and refill the timer.<br>
          If you enter a real word that's not the answer, you lose a life; correct letters lock in place.<br>
          If the timer hits zero, we reveal the word and you lose a life.</p>
@@ -213,8 +221,8 @@
   <!-- Game Over modal -->
   <div class="backdrop" id="gameoverBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="goTitle">
-      <h2 id="goTitle">Game Over</h2>
-      <p id="goBody">You reached level 0.</p>
+      <h2 id="goTitle">Game over</h2>
+      <p id="goBody">You reached level 0</p>
       <div class="actions">
         <button class="btn" id="btnAgain">Play again</button>
       </div>
@@ -554,16 +562,16 @@
     const tiles = [...answerRow.children];
     tiles.forEach((t, i) => {
       if (!state.locked[i]) {
-        t.classList.remove('pop');
+        t.classList.remove('pop','popwin');
         void t.offsetWidth; // restart animation
-        t.classList.add('pop');
+        t.classList.add('popwin'); // exaggerated pop just for the win
       }
     });
     setTimeout(() => {
       state.isAnimating = false;
       state.inputsDisabled = false;
       nextWord(true);
-    }, 320);
+    }, 360); // match .popwin duration + tiny buffer
   }
 
   function onTimeout(){
