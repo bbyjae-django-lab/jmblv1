@@ -11,13 +11,16 @@
       --fg: #0F1220;
       --muted: #6B7280;
       --accent: #3B82F6;
-      --danger: #EF4444; /* not used for flashes; kept for focus outline contrast */
+      --danger: #EF4444;
       --track: #ECECEC;
-      --tile-bg: #EDEDED; /* bank tile bg in light */
+      --tile-bg: #EDEDED;
       --tile-fg: #111827;
       --tile-answer-bg: #FFFFFF;
       --btn-bg: #FFFFFF;
       --btn-fg: #0F1220;
+
+      /* imported from uploaded file */
+      --grad1:#FFB36C; --grad2:#FF8FC6; --grad3:#FFA6E6;
 
       /* Layout-safe sizing for tiles */
       --tile: clamp(68px, 9.5vw, 84px);
@@ -33,15 +36,11 @@
       --focus: 2px dotted currentColor;
     }
     :root[data-theme="dark"] {
-      --bg: #12151C;
-      --fg: #F7F7FA;
-      --muted: #AEB3C2;
-      --track: #2A2E39;
-      --tile-bg: #1B2030;
-      --tile-fg: #F7F7FA;
-      --tile-answer-bg: #1F2536;
-      --btn-bg: #1B2030;
-      --btn-fg: #F7F7FA;
+      /* dark palette + gradients from uploaded file */
+      --bg:#0f1115; --fg:#e6e7eb; --muted:#9aa1aa;
+      --track:#1f2430; --tile-bg:#171a20; --tile-fg:#e6e7eb;
+      --tile-answer-bg:#171a20; --btn-bg:#12161e; --btn-fg:#e6e7eb;
+      --grad1:#9AA9FF; --grad2:#71D3CF; --grad3:#46E39C;
     }
 
     html, body { height: 100%; }
@@ -76,7 +75,13 @@
       padding-top: env(safe-area-inset-top);
     }
     .hdr-left { justify-self: start; }
-    .hdr-title { justify-self: center; font-weight: 800; letter-spacing: 1px; }
+    .hdr-title {
+      justify-self: center; font-weight: 800; letter-spacing: 1px;
+      /* gradient text like uploaded index.html */
+      background: linear-gradient(90deg,var(--grad1) 0%,var(--grad2) 45%,var(--grad3) 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+    }
     .hdr-right { justify-self: end; }
 
     .title { font-size: clamp(20px, 3.8vw, 28px); }
@@ -124,7 +129,8 @@
       position: absolute; inset: 0 auto 0 0; /* left anchored */
       width: 100%;
       border-radius: inherit;
-      background: var(--fg);
+      /* gradient fill like uploaded file */
+      background: linear-gradient(90deg,var(--grad1) 0%,var(--grad2) 45%,var(--grad3) 100%);
       transition: width 200ms linear; /* update ~200ms */
     }
 
@@ -154,8 +160,10 @@
       letter-spacing: .5px;
       font-size: clamp(22px, 3.2vw, 28px);
     }
-    .slot { background: var(--tile-answer-bg); color: var(--tile-fg); }
+    /* Answer tiles now use gradient background like uploaded file */
+    .slot { background: linear-gradient(90deg,var(--grad1) 0%,var(--grad2) 45%,var(--grad3) 100%); color: #fff; }
     .slot.locked { opacity: 1; outline: 2px solid rgba(0,0,0,.12); outline-offset: -2px; }
+    /* Bank tiles remain flat */
     .letter { background: var(--tile-bg); color: var(--tile-fg); cursor: pointer; }
     .letter.used { opacity: .3; cursor: default; }
 
@@ -184,10 +192,32 @@
     @keyframes wiggle { 0%{transform:rotate(0)} 25%{transform:rotate(-2.5deg)} 50%{transform:rotate(2.5deg)} 75%{transform:rotate(-2deg)} 100%{transform:rotate(0)} }
     @keyframes shudder { 0%{transform:translateX(0)} 10%{transform:translateX(-2px)} 20%{transform:translateX(2px)} 30%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 50%{transform:translateX(-1px)} 60%{transform:translateX(1px)} 70%{transform:translateX(-1px)} 80%{transform:translateX(1px)} 90%{transform:translateX(0)} 100%{transform:translateX(0)} }
 
-    .pop { animation: pop 120ms ease; }
-    .shake { animation: shake 220ms ease; }
-    .wiggle { animation: wiggle 200ms ease; }
-    .shudder { animation: shudder 850ms ease; }
+    /* Imported cues from uploaded file */
+    @keyframes jiggle{ 0%{transform:rotate(0)}25%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}75%{transform:rotate(-.8deg)}100%{transform:rotate(0)} }
+    .jiggle{ animation:jiggle .25s ease both; }
+
+    /* slot-pop when a letter is placed */
+    @keyframes slotPop{
+      0%{ transform:scale(1); box-shadow:none }
+      50%{ transform:scale(1.08); box-shadow:0 0 8px rgba(255,150,200,.25) }
+      100%{ transform:scale(1); box-shadow:none }
+    }
+    .slot-pop{ animation:slotPop .22s cubic-bezier(.3,1.4,.4,1) forwards; }
+
+    /* celebrate (correct) */
+    @keyframes popWiggle{
+      0%{transform:scale(1) rotate(0)}
+      20%{transform:scale(1.12) rotate(.6deg)}
+      40%{transform:scale(1.08) rotate(-.6deg)}
+      60%{transform:scale(1.10) rotate(.4deg)}
+      80%{transform:scale(1.04) rotate(-.3deg)}
+      100%{transform:scale(1) rotate(0)}
+    }
+    .answer.celebrate .slot{
+      animation:popWiggle 520ms cubic-bezier(.2,.8,.2,1) both;
+      animation-delay:calc(var(--i,0) * 45ms);
+      will-change:transform;
+    }
 
     /* Reduced motion: disable shakes/wiggles/shudders and transitions */
     @media (prefers-reduced-motion: reduce) {
@@ -380,6 +410,7 @@
         const s = document.createElement('div');
         s.className = 'slot';
         s.setAttribute('data-slot', String(i));
+        s.style.setProperty('--i', i); // used for celebrate stagger
         s.textContent = current[i] || '';
         if(locked[i]) s.classList.add('locked');
         answerRow.appendChild(s);
@@ -468,8 +499,8 @@
       shuffleInPlace(unused);
       // Put back shuffled unused into their original unused slots order
       let j=0; for(let i=0;i<5;i++){ if(!bank[i].used){ bank[i] = unused[j++]; } }
-      bankRow.classList.add('wiggle');
-      setTimeout(()=>bankRow.classList.remove('wiggle'), 220);
+      bankRow.classList.add('jiggle');          // use jiggle from uploaded file
+      setTimeout(()=>bankRow.classList.remove('jiggle'), 300);
       rerenderBank();
     }
 
@@ -484,6 +515,13 @@
       placedIndex[slot] = bankIdx;
       bank[bankIdx].used = true;
       rerenderAnswer();
+
+      // slot-pop animation on the just-filled slot
+      requestAnimationFrame(()=>{
+        const el = answerRow.children[slot];
+        if(el){ el.classList.remove('slot-pop'); void el.offsetWidth; el.classList.add('slot-pop'); }
+      });
+
       rerenderBank();
       autoSubmitIfFull();
     }
@@ -515,9 +553,9 @@
     function evaluateGuess(guess){
       if(busy || revealing) return; busy = true;
       if(guess === answerWord){
-        // Correct: pop only
-        answerRow.classList.add('pop');
-        setTimeout(()=>{ answerRow.classList.remove('pop'); busy=false; nextLevel(); }, 140);
+        // Correct: celebrate (pop-wiggle) like uploaded file, no color flash
+        answerRow.classList.add('celebrate');
+        setTimeout(()=>{ answerRow.classList.remove('celebrate'); busy=false; nextLevel(); }, 740);
         return;
       }
       if(ACCEPTED_SET.has(guess)){
