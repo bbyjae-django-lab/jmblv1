@@ -483,12 +483,14 @@
     state.current[slot] = entry.ch;
     state.placedIndex[slot] = bankIndex;
     entry.used = true;
+    renderAnswerRow();
     // pop animation on that tile
     const node = answerRow.children[slot];
-node.textContent = entry.ch;
-node.classList.remove('empty');   // <- reveals the letter
-node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop');
-
+    node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop');
+    // auto-submit if full
+    autoSubmitIfFull();
+    renderBankRow();
+  }
 
   function onShuffle(){
     // Shuffle only unused letters, preserving used positions
