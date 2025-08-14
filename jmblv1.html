@@ -103,6 +103,8 @@
       transition: transform .1s ease, box-shadow .1s ease;
     }
     .btn:active{ transform: scale(.96); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    /* Prevent iOS double-tap-to-zoom on buttons */
+button{ touch-action: manipulation; }
 
     /* Animations (GPU-friendly, motion-only) */
     @keyframes pop { 0%{transform:scale(.92)} 100%{transform:scale(1)} }
