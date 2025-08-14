@@ -213,10 +213,10 @@
   <!-- Game Over modal -->
   <div class="backdrop" id="gameoverBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="goTitle">
-      <h2 id="goTitle">Game Over</h2><br>
+      <h2 id="goTitle">Game Over</h2>
       <p id="goBody">You reached level 0.</p>
       <div class="actions">
-        <button class="btn" id="btnAgain">JUMBL</button>
+        <button class="btn" id="btnAgain">Play again</button>
       </div>
     </div>
   </div>
@@ -289,7 +289,6 @@
   }
   function announce(txt){ announcer.textContent = txt; }
   function setBackdrop(backdrop, show){ backdrop.classList.toggle('show', !!show); if(show){
-      // Focus first button in modal if present
       const btn = backdrop.querySelector('button'); if(btn) setTimeout(()=>btn.focus(), 0);
     } }
 
@@ -353,7 +352,6 @@
       state.ACCEPTED_SET = new Set(guesses);
       state.listsLoaded = true;
       loadingText.textContent = `Loaded ${answers.length} answers, ${guesses.length} guesses.`;
-      // Small delay to show status then proceed
       setTimeout(()=>{ setBackdrop(loadingBackdrop, false); setBackdrop(introBackdrop, true); }, 400);
     }catch(err){
       loadingText.innerHTML = 'Could not load word lists.\n\nTip: Serve files over HTTP (e.g., <code>python3 -m http.server</code>) and ensure <code>answers.txt</code> and <code>guesses.txt</code> are beside <code>index.html</code>.';
@@ -409,7 +407,6 @@
     pb.setAttribute('aria-valuenow', String(clamp(remainSec,0,COUNTDOWN_SECONDS)));
     if(remainSec !== state.lastAnnouncedSec && remainSec >= 0){
       state.lastAnnouncedSec = remainSec;
-      // announce at most ~1Hz
       announce(`${remainSec} seconds remaining`);
     }
   }
@@ -449,7 +446,6 @@
   function nextWord(increment){
     state.inputsDisabled = false;
     if(increment) state.level++;
-    // pick random distinct answer
     state.answerWord = state.ANSWER_POOL[randInt(state.ANSWER_POOL.length)];
     state.bank = buildBankFrom(state.answerWord);
     state.current = Array(5).fill('');
@@ -483,11 +479,11 @@
     state.current[slot] = entry.ch;
     state.placedIndex[slot] = bankIndex;
     entry.used = true;
-    renderAnswerRow();
-    // pop animation on that tile
+    renderAnswerRow(); // ensures letter becomes visible (removes .empty)
+
     const node = answerRow.children[slot];
     node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop');
-    // auto-submit if full
+
     autoSubmitIfFull();
     renderBankRow();
   }
@@ -498,7 +494,6 @@
     const unusedLetters = unusedIndices.map(i=> state.bank[i].ch);
     shuffleArray(unusedLetters);
     unusedIndices.forEach((idx,k)=>{ state.bank[idx].ch = unusedLetters[k]; });
-    // jiggle bank
     bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
     renderBankRow();
   }
@@ -523,17 +518,14 @@
   function evaluateGuess(guess){
     if(state.isAnimating) return;
     if(guess === state.answerWord){
-      // Correct
       stopTimer();
       celebrateCorrect();
     } else if(state.ACCEPTED_SET.has(guess)){
-      // Valid but wrong -> life -1, lock correct positions, clear the rest
       state.lives = Math.max(0, state.lives - 1);
       for(let i=0;i<5;i++){
         if(guess[i] === state.answerWord[i]){
-          state.locked[i] = true; // keep placedIndex[i] to keep bank index consumed
+          state.locked[i] = true;
         }else{
-          // free bank for those slots
           const bi = state.placedIndex[i];
           if(bi !== null) state.bank[bi].used = false;
           state.current[i] = '';
@@ -543,7 +535,6 @@
       renderUI();
       if(state.lives === 0){ gameOver(); }
     } else {
-      // Invalid -> shake + clear non-locked (no life loss)
       answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
       for(let i=0;i<5;i++){
         if(state.locked[i]) continue;
@@ -557,20 +548,29 @@
   }
 
   function celebrateCorrect(){
-    // pop celebration with light stagger
-    state.isAnimating = true; state.inputsDisabled = true;
+    // Pop only the tiles that were just guessed (ignore previously locked tiles), then advance
+    state.isAnimating = true;
+    state.inputsDisabled = true;
     const tiles = [...answerRow.children];
-    tiles.forEach((t, i)=> setTimeout(()=>{ t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); }, i*60));
-    setTimeout(()=>{ state.isAnimating=false; state.inputsDisabled=false; nextWord(true); }, 600);
+    tiles.forEach((t, i) => {
+      if (!state.locked[i]) {
+        t.classList.remove('pop');
+        void t.offsetWidth; // restart animation
+        t.classList.add('pop');
+      }
+    });
+    setTimeout(() => {
+      state.isAnimating = false;
+      state.inputsDisabled = false;
+      nextWord(true);
+    }, 320);
   }
 
   function onTimeout(){
     state.lives = Math.max(0, state.lives - 1);
-    // Reveal word and shudder (motion only)
     state.inputsDisabled = true;
     for(let i=0;i<5;i++){
       state.current[i] = state.answerWord[i];
-      // keep locked flags as-is; they will be reset in nextWord
     }
     renderUI();
     answerRow.classList.remove('shudder'); void answerRow.offsetWidth; answerRow.classList.add('shudder');
@@ -596,14 +596,12 @@
   // 10) Keyboard (desktop)
   // ------------------------------
   function handleKey(e){
-    // Disable during modals or reveal
     if(loadingBackdrop.classList.contains('show') || introBackdrop.classList.contains('show') || gameoverBackdrop.classList.contains('show') || state.inputsDisabled){ return; }
     const k = e.key;
     if(k === ' '){ e.preventDefault(); onShuffle(); return; }
     if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClearAll(); return; }
     const m = k.toUpperCase();
     if(m.length === 1 && m >= 'A' && m <= 'Z'){
-      // place leftmost matching unused bank entry
       for(let i=0;i<state.bank.length;i++){
         const b = state.bank[i];
         if(!b.used && b.ch === m){ onLetterTap(i); break; }
