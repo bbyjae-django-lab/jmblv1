@@ -136,15 +136,19 @@
     .slot.filled { background: var(--tile-bright); }
 
     /* Letter bank */
-    -.bank {
--  display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap);
--}
-+.bank {
+    .bank {
+-  display: grid;
+-  grid-template-columns: repeat(5, minmax(0, 1fr));
+-  gap: var(--gap);
+-  min-width: 0;
 +  display: grid;
-+  grid-template-columns: repeat(5, minmax(0, 1fr));
++  grid-template-columns: repeat(5, 1fr);
 +  gap: var(--gap);
 +  min-width: 0;
-+}
++  align-content: start;  /* don't stretch rows to fill the tall 1fr track */
++  align-items: start;    /* don't stretch items vertically */
+ }
+
     .letter {
       width: 100%; aspect-ratio: 1 / 1; display:grid; place-items:center;
       font-weight: 800; font-size: clamp(22px, 7vw, 28px);
