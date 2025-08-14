@@ -208,12 +208,11 @@ button{ touch-action: manipulation; }
   <div class="backdrop" id="introBackdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
       <h2 id="rulesTitle">RULES</h2>
-      <p>Use the jumbled letters to make a 5 letter word.<br>
-         Beat the clock to level up and refill the timer.<br>
-         If you enter a real word that's not the answer, you lose a life; correct letters lock in place.<br>
-         If the timer hits zero, we reveal the word and you lose a life.</p>
+      <p>Make a real 5-letter word.<br>
+         Correct: level up + timer refills.<br>
+         Real but wrong: −1 life; matches lock.<br>
+         Time’s up: reveal + −1 life.</p>
       <p>25 seconds per word • 3 lives</p>
-      <p>Tip: Shuffle letters • Clear all</p>
       <div class="actions">
         <button class="btn" id="btnPlay">Play</button>
       </div>
