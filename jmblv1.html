@@ -11,642 +11,588 @@
        ------------------------------ */
     :root{
       color-scheme: light dark;
+      /* Light */
       --bg:#F6F7FB; --fg:#0F1220; --muted:#6B7280; --track:#ECECEC;
       --tile-bg:#FFFFFF; --tile-fg:#111827; --btn-bg:#FFFFFF; --btn-fg:#0F1220;
       --accent:#3B82F6; --danger:#EF4444; --shadow:0 6px 20px rgba(0,0,0,.08); --radius:16px;
-      --gap:10px;
-      --maxw:600px;
+      --card-radius:24px;
     }
     html.dark{
-      color-scheme: dark;
+      /* Dark */
       --bg:#0F1115; --fg:#E6E7EB; --muted:#9AA1AA; --track:#1F2430;
       --tile-bg:#171A20; --tile-fg:#F7F7FA; --btn-bg:#171A20; --btn-fg:#E6E7EB;
       --accent:#7CB2FF; --danger:#FF6B88; --shadow:0 8px 24px rgba(0,0,0,.35); --radius:16px;
+      --card-radius:24px;
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%;}
+    *{ box-sizing: border-box }
+    html, body{ height:100%; }
     body{
       margin:0; background:var(--bg); color:var(--fg);
-      font: 16px/1.4 system-ui,-apple-system, "SF Pro Text", Segoe UI, Roboto, Arial, sans-serif;
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-      -webkit-tap-highlight-color: transparent; /* keep focus outlines via :focus-visible */
+      font-family: system-ui, -apple-system, "SF Pro Text", Segoe UI, Roboto, Arial, sans-serif;
       height:100dvh; min-height:100dvh; overflow:hidden; overscroll-behavior:none;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent; /* keep :focus-visible outlines */
     }
-    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
-    /* Dynamic viewport sizing */
-    :root{ --vh:100vh; --vw:100vw; }
-
-    /* App shell */
+    /* Dynamic viewport sizing via CSS vars set by JS */
     .app{
-      width: min(var(--vw, 100vw), var(--maxw));
+      width: min(var(--vw, 100vw), 600px);
       margin: 0 auto;
-      padding:
-        calc(env(safe-area-inset-top) + 16px)
-        16px
-        calc(env(safe-area-inset-bottom) + 18px);
-      display:grid; grid-template-rows:auto auto auto auto auto auto auto 1fr; gap:14px;
+      padding-top: calc(env(safe-area-inset-top) + 16px);
+      padding-bottom: calc(env(safe-area-inset-bottom) + 18px);
+      padding-left: 16px; padding-right:16px;
+      display:flex; flex-direction:column; gap:14px;
+      min-height:100%;
     }
 
-    /* Header */
-    .header{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
-    .title{ text-align:center; font-weight:800; letter-spacing:0.12em; font-size: clamp(18px, 2.4vw, 22px); }
-    .theme-wrap{ justify-self:end; }
-    .icon-btn{
-      appearance:none; border:1px solid transparent; background:var(--btn-bg); color:var(--btn-fg);
-      border-radius:12px; padding:10px; box-shadow:var(--shadow); cursor:pointer;
-      display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      transition: transform .08s ease, box-shadow .08s ease; /* press animation */
-    }
-    .icon-btn:active{ transform: scale(.96); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
-    .icon{ width:20px; height:20px; display:block; }
+    .header{ display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; }
+    .header h1{ grid-column:2; margin:0; text-align:center; font-size: clamp(20px, 4.2vw, 28px); letter-spacing:2px; }
+    .theme-toggle{ grid-column:3; justify-self:end; border:none; background:transparent; cursor:pointer; width:40px; height:40px; border-radius:999px; display:grid; place-items:center; }
+    .theme-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
 
-    /* Lives */
-    .lives{ display:flex; gap:10px; justify-content:center; align-items:center; }
-    .pip{ width:10px; height:10px; border-radius:50%; background:currentColor; opacity:.3; }
-    .pip.on{ opacity:1; }
+    .lives{ display:flex; gap:10px; justify-content:center; align-items:center; margin-top:2px; }
+    .pip{ width:12px; height:12px; border-radius:999px; background:currentColor; opacity:.25 }
+    .pip.on{ opacity:1 }
 
-    /* Level */
-    .level{ text-align:center; color:var(--muted); font-weight:600; }
+    .level{ text-align:center; font-weight:600; margin-top:2px; }
 
-    /* Timer */
-    .timer-card{ background:var(--btn-bg); border-radius: var(--radius); padding:12px; box-shadow:var(--shadow); }
-    .timer{
-      height:14px; background:var(--track); border-radius:9999px; position:relative; overflow:hidden;
-    }
-    .fill{
-      position:absolute; left:0; top:0; bottom:0; width:100%;
-      background:var(--accent); border-radius:9999px;
-      transition: width 100ms linear; /* TICK_MS */
-    }
+    .timer-card{ background: var(--btn-bg); border-radius: var(--card-radius); box-shadow: var(--shadow); padding:12px; }
+    .timer{ position:relative; height:14px; background:var(--track); border-radius:9999px; overflow:hidden; }
+    .timer-fill{ position:absolute; left:0; top:0; bottom:0; width:100%; background: var(--accent); transform-origin:left center; transition: width 100ms linear; }
+    .timer-wrap[aria-hidden="true"]{ display:none }
 
-    /* Rows (Answer above Bank) */
-    .row{ display:grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
+    .rows{ display:flex; flex-direction:column; gap:12px; }
+    .grid5{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
+
     .tile, .bank-btn{
-      background:var(--tile-bg); color:var(--tile-fg); border:1px solid transparent;
-      border-radius:14px; display:grid; place-items:center; font-weight:800; font-size: clamp(20px, 5vw, 28px);
-      aspect-ratio:1/1; min-width:56px; min-height:56px; box-shadow:var(--shadow);
-      user-select:none;
+      aspect-ratio: 1 / 1; min-width:56px; min-height:56px;
+      display:grid; place-items:center; border-radius: var(--radius);
+      box-shadow: var(--shadow); user-select:none;
     }
-    .tile.locked{ opacity:.96; outline:2px solid var(--muted); }
-    .tile.empty{ color:transparent; }
+    .tile{ background: var(--tile-bg); color: var(--tile-fg); font-weight:700; font-size: clamp(20px, 6.2vw, 28px); position:relative; }
+    .tile.locked::after{ content:"\1F512"; position:absolute; right:8px; top:6px; font-size:14px; opacity:.6 }
 
-    .bank-btn{ cursor:pointer; }
-    .bank-btn[disabled]{ opacity:.35; cursor:not-allowed; }
+    .bank-btn{ background: var(--btn-bg); color: var(--btn-fg); font-weight:800; font-size: clamp(18px, 5.6vw, 26px); border:none; cursor:pointer; transition: transform .1s ease; }
+    .bank-btn:disabled{ opacity:.35; cursor:default }
+    .bank-btn:active{ transform: scale(.96) }
+    .bank-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
 
-    /* Controls */
-    .controls{ display:grid; grid-template-columns:1fr 1fr; gap: var(--gap); }
-    .btn{
-      appearance:none; border:1px solid transparent; background:var(--btn-bg); color:var(--btn-fg);
-      border-radius:16px; padding:14px; font-weight:700; box-shadow:var(--shadow); cursor:pointer;
-      transition: transform .1s ease, box-shadow .1s ease;
-    }
-    .btn:active{ transform: scale(.96); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
-    /* Prevent iOS double-tap-to-zoom on buttons */
-button{ touch-action: manipulation; }
+    .controls{ display:flex; gap:12px; justify-content:center; }
+    .btn{ min-width:120px; min-height:44px; padding:12px 16px; border-radius: var(--radius); box-shadow: var(--shadow); border:none; background: var(--btn-bg); color: var(--btn-fg); font-weight:700; cursor:pointer; transition: transform .1s ease }
+    .btn:active{ transform: scale(.96) }
+    .btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
 
-    /* Animations (GPU-friendly, motion-only) */
-    @keyframes pop { 0%{transform:scale(.92)} 100%{transform:scale(1)} }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
-    @keyframes jiggle { 0%,100%{transform:translateY(0)} 25%{transform:translateY(-2px)} 75%{transform:translateY(2px)} }
-    @keyframes shudder { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-2px)} 20%{transform:translateX(2px)} 30%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 50%{transform:translateX(-1px)} 60%{transform:translateX(1px)} 70%{transform:translateX(-1px)} 80%{transform:translateX(1px)} 90%{transform:translateX(0)} }
+    .spacer{ flex:1 }
 
-    .pop{ animation: pop .2s ease both; }
-    .shake{ animation: shake .22s ease both; }
-    .jiggle{ animation: jiggle .26s ease both; }
-    .shudder{ animation: shudder .8s ease both; }
+    /* Animations (motion-only) */
+    @keyframes pop { from{ transform:scale(.92) } to{ transform:scale(1) } }
+    @keyframes shake { 0%,100%{ transform:translateX(0) } 25%{ transform:translateX(-6px) } 75%{ transform:translateX(6px) } }
+    @keyframes jiggle { 0%,100%{ transform:rotate(0deg) } 25%{ transform:rotate(-1.6deg) } 75%{ transform:rotate(1.6deg) } }
+    @keyframes shudder { 0%,100%{ transform:translateX(0) } 20%{ transform:translateX(-2px) } 40%{ transform:translateX(2px) } 60%{ transform:translateX(-2px) } 80%{ transform:translateX(2px) } }
 
-    /* Exaggerated win pop (only on correct answer) */
-    @keyframes popwin { 
-      0%   { transform: scale(.85) } 
-      60%  { transform: scale(1.12) }  /* increase this to 1.15+ for more oomph */
-      100% { transform: scale(1) } 
-    }
-    .popwin{ animation: popwin .34s cubic-bezier(.2,.7,.2,1) both; } /* lengthen for slower pop */
+    .pop{ animation: pop .2s ease-out }
+    .shake{ animation: shake .22s ease-in-out }
+    .jiggle{ animation: jiggle .26s ease-in-out }
+    .shudder{ animation: shudder .85s ease-in-out }
 
     @media (prefers-reduced-motion: reduce){
-      .pop,.shake,.jiggle,.shudder{ animation-duration:.05s; animation-iteration-count:1; }
-      .fill{ transition:none; }
+      .pop, .shake, .jiggle, .shudder{ animation: none !important }
+      .bank-btn, .btn{ transition:none }
+      .timer-fill{ transition:none }
     }
 
     /* Modals */
-    .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:10; }
-    .backdrop.show{ display:grid; place-items:center; }
-    .modal{ width:min(92vw, 520px); background:var(--btn-bg); color:var(--btn-fg); border-radius:24px; padding:22px; box-shadow:var(--shadow); }
-    .modal h2{ margin:0 0 8px; font-size:20px; }
-    .modal p{ margin:10px 0; color:var(--muted); }
-    .modal .actions{ margin-top:14px; display:flex; gap:10px; justify-content:flex-end; }
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.36); backdrop-filter:saturate(120%) blur(2px); padding:24px; }
+    .modal.open{ display:flex }
+    .dialog{ width:min(520px, 92vw); background: var(--btn-bg); color: var(--btn-fg); border-radius: var(--card-radius); box-shadow: var(--shadow); padding:20px }
+    .dialog h2{ margin:0 0 8px 0; font-size:20px }
+    .dialog p{ margin:6px 0; color: var(--muted) }
 
-    /* Focus visible outlines retained */
-    :focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
   </style>
 </head>
 <body>
-  <div class="app" id="app" aria-live="polite">
-    <!-- 1) Header -->
-    <header class="header">
+  <div id="app" class="app" aria-live="polite">
+    <header class="header" aria-label="Header">
       <div></div>
-      <div class="title" aria-label="Game title">JUMBL</div>
-      <div class="theme-wrap">
-        <button class="icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
-          <!-- replace your current #iconSun SVG with this -->
-<svg class="icon" id="iconSun" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" role="img">
-  <!-- core -->
-  <circle cx="12" cy="12" r="4"/>
-  <!-- N / S / W / E rays -->
-  <rect x="11" y="2"  width="2" height="3" rx="1"/>
-  <rect x="11" y="19" width="2" height="3" rx="1"/>
-  <rect x="2"  y="11" width="3" height="2" rx="1"/>
-  <rect x="19" y="11" width="3" height="2" rx="1"/>
-  <!-- diagonal rays -->
-  <rect x="4.05"  y="4.05"  width="2" height="2" rx="1" transform="rotate(45 5.05 5.05)"/>
-  <rect x="17.95" y="4.05"  width="2" height="2" rx="1" transform="rotate(45 18.95 5.05)"/>
-  <rect x="4.05"  y="17.95" width="2" height="2" rx="1" transform="rotate(45 5.05 18.95)"/>
-  <rect x="17.95" y="17.95" width="2" height="2" rx="1" transform="rotate(45 18.95 18.95)"/>
-</svg>
-          <svg class="icon" id="iconMoon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-        </button>
-      </div>
+      <h1>JUMBL</h1>
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme" type="button"></button>
     </header>
 
-    <!-- 2) Lives -->
     <div class="lives" aria-label="Lives">
-      <span class="pip" id="pip1"></span>
-      <span class="pip" id="pip2"></span>
-      <span class="pip" id="pip3"></span>
-      <span class="sr-only" id="livesText">Lives: 3 of 3</span>
+      <div class="pip on" aria-hidden="true"></div>
+      <div class="pip on" aria-hidden="true"></div>
+      <div class="pip on" aria-hidden="true"></div>
+      <span id="livesText" class="sr-only">Lives: 3 of 3</span>
     </div>
 
-    <!-- 3) Level label -->
-    <div class="level" id="level">Level 1</div>
+    <div id="level" class="level" aria-label="Level">Level 1</div>
 
-    <!-- 4) Timer -->
-    <div class="timer-card">
-      <div class="timer" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25" aria-label="Time remaining">
-        <div class="fill" id="timerFill" style="width:100%"></div>
+    <section class="timer-card">
+      <div id="timerWrap" class="timer-wrap" role="presentation">
+        <div id="timer" class="timer" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25" aria-label="Time remaining">
+          <div id="timerFill" class="timer-fill" style="width:100%"></div>
+        </div>
       </div>
-    </div>
+      <div id="announce" class="sr-only" aria-live="polite"></div>
+    </section>
 
-    <!-- 5) Answer row (above) -->
-    <div class="row" id="answerRow" aria-label="Your guess"></div>
+    <main class="rows">
+      <section id="answerRow" class="grid5" aria-label="Your guess"></section>
+      <section id="bankRow" class="grid5" aria-label="Letter bank"></section>
+    </main>
 
-    <!-- 6) Letter bank (below) -->
-    <div class="row" id="bankRow" aria-label="Letter bank"></div>
+    <nav class="controls" aria-label="Controls">
+      <button id="shuffleBtn" class="btn" type="button">Shuffle</button>
+      <button id="clearBtn" class="btn" type="button" aria-keyshortcuts="Backspace Delete">Clear all</button>
+    </nav>
 
-    <!-- 7) Controls -->
-    <div class="controls">
-      <button class="btn" id="btnShuffle" aria-label="Shuffle letters">Shuffle</button>
-      <button class="btn" id="btnClear" aria-label="Clear">Clear</button>
-    </div>
-
-    <!-- spacer -->
-    <div></div>
+    <div class="spacer"></div>
   </div>
 
-  <!-- ARIA live announcer -->
-  <div class="sr-only" id="announcer" aria-live="polite"></div>
+  <!-- Intro / Rules Modal -->
+  <div id="introModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="dialog">
+      <h2 id="introTitle">RULES</h2>
+      <p>Use the jumbled letters to make a real 5-letter word. Beat the clock to level up and refill the timer.</p>
+      <p>If you enter a real word that's not the answer, you get +5 seconds (capped at 25s total) and correct letters lock in place.</p>
+      <p>If the timer hits zero, we reveal the word and you lose a life.</p>
+      <p><strong>25 seconds per word • 3 lives</strong></p>
+      <p>Tip: ⤮ Shuffle letters • ⌫ Clear all</p>
+      <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end">
+        <button id="playBtn" class="btn" type="button">Play</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Loading / Retry modal -->
-  <div class="backdrop" id="loadingBackdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loadingTitle">
+  <!-- Game Over Modal -->
+  <div id="gameOverModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+    <div class="dialog">
+      <h2 id="gameOverTitle">Game Over</h2>
+      <p id="gameOverBody">You reached level 0.</p>
+      <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end">
+        <button id="tryAgainBtn" class="btn" type="button">try again ➜</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading / Retry Modal -->
+  <div id="loadingModal" class="modal open" role="dialog" aria-modal="true" aria-labelledby="loadingTitle">
+    <div class="dialog">
       <h2 id="loadingTitle">Loading word lists…</h2>
-      <p id="loadingText">Fetching…</p>
-      <div class="actions">
-        <button class="btn" id="btnRetry" disabled>Retry</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Intro / Rules modal -->
-  <div class="backdrop" id="introBackdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
-      <h2 id="rulesTitle">Rules</h2>
-      <p>Make a real 5-letter word<br>
-         Correct: level up + timer refills<br>
-         Real but wrong: −1 life; matches lock<br>
-         Time’s up: reveal + −1 life</p>
-      <p>25 seconds per word • 3 lives</p>
-      <div class="actions">
-        <button class="btn" id="btnPlay">Play</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Game Over modal -->
-  <div class="backdrop" id="gameoverBackdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="goTitle">
-      <h2 id="goTitle">Game over</h2>
-      <p id="goBody">You reached level 0</p>
-      <div class="actions">
-        <button class="btn" id="btnAgain">Play again</button>
+      <p id="loadingStatus">Fetching…</p>
+      <div style="margin-top:12px; display:flex; gap:10px; justify-content:flex-end">
+        <button id="retryBtn" class="btn" type="button" disabled>Retry</button>
       </div>
     </div>
   </div>
 
   <script>
-  // ------------------------------
-  // 1) Constants & State
-  // ------------------------------
-  const COUNTDOWN_SECONDS = 25;
-  const STARTING_LIVES = 3;
-  const TICK_MS = 100;
+    // ------------------------------
+    // 1) Constants & State
+    // ------------------------------
+    const COUNTDOWN_SECONDS = 25;
+    const STARTING_LIVES = 3;
+    const TIME_BOOST_SECONDS = 5;
+    const MAX_TIME_SECONDS = 25; // hard cap
+    const TICK_MS = 100;
 
-  const state = {
-    // word lists
-    ANSWER_POOL: [],
-    ACCEPTED_SET: new Set(),
+    let ANSWER_POOL = [];
+    let ACCEPTED_SET = new Set();
 
-    // authoritative game state
-    answerWord: '',
-    bank: [], // [{ch, used}] length 5
-    current: Array(5).fill(''),
-    locked: Array(5).fill(false),
-    placedIndex: Array(5).fill(null), // slot -> bank index
+    let answerWord = "";
+    let bank = [];                 // [{ch, used} x 5]
+    let current = Array(5).fill("");
+    let locked = Array(5).fill(false);
+    let placedIndex = Array(5).fill(null);
 
-    lives: STARTING_LIVES,
-    level: 1,
-    runStartAt: 0,
+    let lives = STARTING_LIVES;
+    let level = 1;
+    let runStartAt = 0;
+    let deadlineAt = 0; // performance.now() + 25_000
+    let timerHandle = null;
+    let lastAnnounceSec = null;
+    let isAnimating = false;
+    let inputsDisabled = false; // during reveal
 
-    deadlineAt: 0,
-    timerHandle: null,
-    lastAnnouncedSec: COUNTDOWN_SECONDS,
-    isAnimating: false,
+    // DOM
+    const elLivesPips = () => Array.from(document.querySelectorAll('.pip'));
+    const livesText = document.getElementById('livesText');
+    const levelEl = document.getElementById('level');
+    const timerEl = document.getElementById('timer');
+    const timerFill = document.getElementById('timerFill');
+    const answerRow = document.getElementById('answerRow');
+    const bankRow = document.getElementById('bankRow');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const announceEl = document.getElementById('announce');
 
-    // UI guards
-    inputsDisabled: false,
-    listsLoaded: false,
-  };
+    const introModal = document.getElementById('introModal');
+    const playBtn = document.getElementById('playBtn');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const gameOverBody = document.getElementById('gameOverBody');
+    const tryAgainBtn = document.getElementById('tryAgainBtn');
+    const loadingModal = document.getElementById('loadingModal');
+    const loadingStatus = document.getElementById('loadingStatus');
+    const retryBtn = document.getElementById('retryBtn');
 
-  // ------------------------------
-  // 2) Utilities
-  // ------------------------------
-  const $ = sel => document.querySelector(sel);
-  const app = $('#app');
-  const answerRow = $('#answerRow');
-  const bankRow = $('#bankRow');
-  const levelEl = $('#level');
-  const timerFill = $('#timerFill');
-  const announcer = $('#announcer');
-  const livesText = $('#livesText');
-
-  // Modals
-  const loadingBackdrop = $('#loadingBackdrop');
-  const loadingText = $('#loadingText');
-  const btnRetry = $('#btnRetry');
-  const introBackdrop = $('#introBackdrop');
-  const btnPlay = $('#btnPlay');
-  const gameoverBackdrop = $('#gameoverBackdrop');
-  const goBody = $('#goBody');
-  const btnAgain = $('#btnAgain');
-
-  // Controls
-  const btnShuffle = $('#btnShuffle');
-  const btnClear = $('#btnClear');
-
-  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-  function randInt(n){ return Math.floor(Math.random()*n); }
-  function shuffleArray(arr){
-    for(let i=arr.length-1;i>0;i--){ const j = randInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; }
-    return arr;
-  }
-  function announce(txt){ announcer.textContent = txt; }
-  function setBackdrop(backdrop, show){ backdrop.classList.toggle('show', !!show); if(show){
-      const btn = backdrop.querySelector('button'); if(btn) setTimeout(()=>btn.focus(), 0);
-    } }
-
-  // ------------------------------
-  // 3) Theme (sessionStorage: 'jumbl-theme')
-  // ------------------------------
-  const THEME_KEY = 'jumbl-theme';
-  function applyTheme(theme){
-    const isDark = theme === 'dark';
-    document.documentElement.classList.toggle('dark', isDark);
-    // swap icon visibility
-    $('#iconSun').style.display = isDark ? 'none':'block';
-    $('#iconMoon').style.display = isDark ? 'block':'none';
-  }
-  function initTheme(){
-    let t = sessionStorage.getItem(THEME_KEY);
-    if(!t){ t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
-    applyTheme(t);
-  }
-  $('#themeToggle').addEventListener('click', ()=>{
-    const nowDark = !document.documentElement.classList.contains('dark');
-    applyTheme(nowDark ? 'dark' : 'light');
-    sessionStorage.setItem(THEME_KEY, nowDark ? 'dark' : 'light');
-  });
-
-  // ------------------------------
-  // 4) Dynamic viewport vars (--vh, --vw)
-  // ------------------------------
-  function updateViewportVars(){
-    const vv = window.visualViewport;
-    const w = vv ? vv.width : window.innerWidth;
-    const h = vv ? vv.height : window.innerHeight;
-    document.documentElement.style.setProperty('--vw', w + 'px');
-    document.documentElement.style.setProperty('--vh', h + 'px');
-  }
-  updateViewportVars();
-  window.addEventListener('resize', updateViewportVars, {passive:true});
-  window.addEventListener('orientationchange', updateViewportVars, {passive:true});
-  window.addEventListener('pageshow', updateViewportVars, {passive:true});
-  if(window.visualViewport){ visualViewport.addEventListener('resize', updateViewportVars, {passive:true}); visualViewport.addEventListener('scroll', updateViewportVars, {passive:true}); }
-
-  // ------------------------------
-  // 5) Loading word lists
-  // ------------------------------
-  async function loadWordLists(){
-    setBackdrop(loadingBackdrop, true);
-    loadingText.textContent = 'Fetching…';
-    btnRetry.disabled = true;
-    try{
-      const [aRes, gRes] = await Promise.all([
-        fetch('answers.txt', {cache:'no-store'}),
-        fetch('guesses.txt', {cache:'no-store'})
-      ]);
-      if(!aRes.ok || !gRes.ok) throw new Error('HTTP error');
-      const [aText, gText] = await Promise.all([aRes.text(), gRes.text()]);
-      const re = /^[A-Z]{5}$/;
-      const answers = aText.split(/\r?\n/).map(s=>s.trim().toUpperCase()).filter(s=>re.test(s));
-      const guesses = gText.split(/\r?\n/).map(s=>s.trim().toUpperCase()).filter(s=>re.test(s));
-      if(!answers.length || !guesses.length) throw new Error('Empty lists');
-      state.ANSWER_POOL = answers;
-      state.ACCEPTED_SET = new Set(guesses);
-      state.listsLoaded = true;
-      loadingText.textContent = `Loaded ${answers.length} answers, ${guesses.length} guesses.`;
-      setTimeout(()=>{ setBackdrop(loadingBackdrop, false); setBackdrop(introBackdrop, true); }, 400);
-    }catch(err){
-      loadingText.innerHTML = 'Could not load word lists.\n\nTip: Serve files over HTTP (e.g., <code>python3 -m http.server</code>) and ensure <code>answers.txt</code> and <code>guesses.txt</code> are beside <code>index.html</code>.';
-      btnRetry.disabled = false;
+    // ------------------------------
+    // 2) Theme toggle (persist in sessionStorage)
+    // ------------------------------
+    const THEME_KEY = 'jumbl-theme';
+    const themeToggle = document.getElementById('themeToggle');
+    function applyTheme(theme){
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      themeToggle.innerHTML = theme === 'dark' ? sunSVG() : moonSVG();
     }
-  }
-  $('#btnRetry').addEventListener('click', ()=> loadWordLists());
-
-  // ------------------------------
-  // 6) Rendering helpers
-  // ------------------------------
-  function renderLives(){
-    for(let i=1;i<=3;i++){
-      const el = $('#pip'+i);
-      el.classList.toggle('on', i <= state.lives);
+    function initTheme(){
+      let theme = sessionStorage.getItem(THEME_KEY);
+      if(!theme){ theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+      applyTheme(theme);
     }
-    livesText.textContent = `Lives: ${state.lives} of ${STARTING_LIVES}`;
-  }
-
-  function renderLevel(){ levelEl.textContent = `Level ${state.level}`; }
-
-  function renderAnswerRow(){
-    answerRow.innerHTML = '';
-    state.current.forEach((ch, i)=>{
-      const div = document.createElement('div');
-      div.className = 'tile' + (state.locked[i] ? ' locked' : ch ? '' : ' empty');
-      div.textContent = ch || '•';
-      div.dataset.slot = i;
-      answerRow.appendChild(div);
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      sessionStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+      themeToggle.innerHTML = isDark ? sunSVG() : moonSVG();
     });
-  }
-
-  function renderBankRow(){
-    bankRow.innerHTML='';
-    state.bank.forEach((b,i)=>{
-      const btn = document.createElement('button');
-      btn.className = 'bank-btn';
-      btn.type = 'button';
-      btn.textContent = b.ch;
-      btn.disabled = b.used || state.inputsDisabled;
-      btn.dataset.idx = i;
-      btn.addEventListener('click', ()=> onLetterTap(i));
-      bankRow.appendChild(btn);
-    });
-  }
-
-  function renderTimer(nowMs){
-    const remainMs = clamp(state.deadlineAt - nowMs, 0, COUNTDOWN_SECONDS*1000);
-    const pct = (remainMs / (COUNTDOWN_SECONDS*1000)) * 100;
-    timerFill.style.width = pct + '%'; // left-anchored, drains right -> left
-    const remainSec = Math.ceil(remainMs/1000);
-    const pb = document.querySelector('.timer[role="progressbar"]');
-    pb.setAttribute('aria-valuenow', String(clamp(remainSec,0,COUNTDOWN_SECONDS)));
-    if(remainSec !== state.lastAnnouncedSec && remainSec >= 0){
-      state.lastAnnouncedSec = remainSec;
-      announce(`${remainSec} seconds remaining`);
+    function sunSVG(){
+      return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
     }
-  }
-
-  function renderUI(){
-    renderLives();
-    renderLevel();
-    renderAnswerRow();
-    renderBankRow();
-  }
-
-  // ------------------------------
-  // 7) Timer controls
-  // ------------------------------
-  function startTimer(){
-    stopTimer();
-    state.lastAnnouncedSec = COUNTDOWN_SECONDS;
-    state.deadlineAt = performance.now() + COUNTDOWN_SECONDS*1000;
-    renderTimer(performance.now());
-    state.timerHandle = setInterval(()=>{
-      const now = performance.now();
-      renderTimer(now);
-      if(now >= state.deadlineAt){ stopTimer(); onTimeout(); }
-    }, TICK_MS);
-  }
-  function stopTimer(){ if(state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle=null; } }
-
-  // ------------------------------
-  // 8) Bank & Next word
-  // ------------------------------
-  function buildBankFrom(answer){
-    const letters = answer.split('');
-    shuffleArray(letters);
-    return letters.map(ch=>({ch, used:false}));
-  }
-
-  function nextWord(increment){
-    state.inputsDisabled = false;
-    if(increment) state.level++;
-    state.answerWord = state.ANSWER_POOL[randInt(state.ANSWER_POOL.length)];
-    state.bank = buildBankFrom(state.answerWord);
-    state.current = Array(5).fill('');
-    state.locked = Array(5).fill(false);
-    state.placedIndex = Array(5).fill(null);
-    renderUI();
-    startTimer();
-  }
-
-  function startRun(){
-    state.lives = STARTING_LIVES;
-    state.level = 1;
-    state.runStartAt = Date.now();
-    nextWord(false);
-  }
-
-  // ------------------------------
-  // 9) Input handlers
-  // ------------------------------
-  function firstUnlockedSlot(){
-    for(let i=0;i<5;i++) if(!state.locked[i] && !state.current[i]) return i;
-    return -1;
-  }
-
-  function onLetterTap(bankIndex){
-    if(state.inputsDisabled) return;
-    const entry = state.bank[bankIndex];
-    if(!entry || entry.used) return;
-    const slot = firstUnlockedSlot();
-    if(slot === -1) return;
-    state.current[slot] = entry.ch;
-    state.placedIndex[slot] = bankIndex;
-    entry.used = true;
-    renderAnswerRow(); // ensures letter becomes visible (removes .empty)
-
-    const node = answerRow.children[slot];
-    node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop');
-
-    autoSubmitIfFull();
-    renderBankRow();
-  }
-
-  function onShuffle(){
-    // Shuffle only unused letters, preserving used positions
-    const unusedIndices = state.bank.map((b,i)=> b.used ? null : i).filter(i=>i!==null);
-    const unusedLetters = unusedIndices.map(i=> state.bank[i].ch);
-    shuffleArray(unusedLetters);
-    unusedIndices.forEach((idx,k)=>{ state.bank[idx].ch = unusedLetters[k]; });
-    bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
-    renderBankRow();
-  }
-
-  function onClear(){
-    for(let i=0;i<5;i++){
-      if(state.locked[i]) continue;
-      const bi = state.placedIndex[i];
-      if(bi !== null){ state.bank[bi].used = false; }
-      state.current[i] = '';
-      state.placedIndex[i] = null;
+    function moonSVG(){
+      return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" fill="none"/></svg>`;
     }
-    renderUI();
-  }
 
-  function autoSubmitIfFull(){
-    if(state.current.every(ch=>!!ch)){
-      evaluateGuess(state.current.join(''));
+    // ------------------------------
+    // 3) Dynamic viewport vars
+    // ------------------------------
+    function setViewportVars(){
+      const vv = window.visualViewport;
+      const vw = vv ? vv.width : window.innerWidth;
+      const vh = vv ? vv.height : window.innerHeight;
+      document.documentElement.style.setProperty('--vw', vw + 'px');
+      document.documentElement.style.setProperty('--vh', vh + 'px');
     }
-  }
+    setViewportVars();
+    if(window.visualViewport){
+      visualViewport.addEventListener('resize', setViewportVars);
+      visualViewport.addEventListener('scroll', setViewportVars);
+    }
+    window.addEventListener('orientationchange', setViewportVars);
+    window.addEventListener('resize', setViewportVars);
+    window.addEventListener('pageshow', setViewportVars);
 
-  function evaluateGuess(guess){
-    if(state.isAnimating) return;
-    if(guess === state.answerWord){
-      stopTimer();
-      celebrateCorrect();
-    } else if(state.ACCEPTED_SET.has(guess)){
-      state.lives = Math.max(0, state.lives - 1);
+    // ------------------------------
+    // 4) Word list loading
+    // ------------------------------
+    async function loadWordLists(){
+      try{
+        loadingModal.classList.add('open');
+        loadingStatus.textContent = 'Fetching…';
+        retryBtn.disabled = true;
+
+        const [aRes, gRes] = await Promise.all([
+          fetch('answers.txt', { cache:'no-store' }),
+          fetch('guesses.txt', { cache:'no-store' })
+        ]);
+
+        if(!aRes.ok || !gRes.ok) throw new Error('Network error');
+
+        const [aText, gText] = await Promise.all([aRes.text(), gRes.text()]);
+        const parse = (t) => t.split(/\r?\n/).map(s=>s.trim().toUpperCase()).filter(s=>/^[A-Z]{5}$/.test(s));
+        const answers = parse(aText);
+        const guesses = parse(gText);
+
+        if(!answers.length || !guesses.length) throw new Error('Empty lists');
+
+        ANSWER_POOL = answers;
+        ACCEPTED_SET = new Set(guesses);
+
+        loadingStatus.textContent = `Loaded ${answers.length} answers, ${guesses.length} guesses.`;
+        setTimeout(()=> loadingModal.classList.remove('open'), 250);
+        // After loading, show intro rules
+        introModal.classList.add('open');
+        playBtn.focus();
+      }catch(err){
+        loadingStatus.innerHTML = "Couldn't load files. Serve over HTTP and ensure <code>answers.txt</code> and <code>guesses.txt</code> sit beside <code>index.html</code>.";
+        retryBtn.disabled = false;
+      }
+    }
+
+    retryBtn.addEventListener('click', loadWordLists);
+    playBtn.addEventListener('click', () => { introModal.classList.remove('open'); startRun(); });
+
+    // ------------------------------
+    // 5) Game flow helpers
+    // ------------------------------
+    function randInt(n){ return Math.floor(Math.random()*n); }
+    function shuffleArr(arr){ for(let i=arr.length-1;i>0;i--){ const j=randInt(i+1); [arr[i], arr[j]]=[arr[j], arr[i]]; } return arr; }
+
+    function buildBankFrom(word){
+      const letters = word.split('');
+      shuffleArr(letters);
+      return letters.map(ch => ({ ch, used:false }));
+    }
+
+    function renderLives(){
+      const pips = elLivesPips();
+      pips.forEach((pip, i) => pip.classList.toggle('on', i < lives));
+      livesText.textContent = `Lives: ${lives} of ${STARTING_LIVES}`;
+    }
+
+    function renderLevel(){ levelEl.textContent = `Level ${level}`; }
+
+    function renderRows(){
+      // Answer row
+      answerRow.innerHTML = '';
       for(let i=0;i<5;i++){
-        if(guess[i] === state.answerWord[i]){
-          state.locked[i] = true;
+        const d = document.createElement('div');
+        d.className = 'tile' + (locked[i] ? ' locked' : '');
+        d.textContent = current[i] || '';
+        answerRow.appendChild(d);
+      }
+      // Bank row
+      bankRow.innerHTML = '';
+      bank.forEach((b, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'bank-btn';
+        btn.type = 'button';
+        btn.textContent = b.ch;
+        btn.disabled = b.used || inputsDisabled;
+        btn.setAttribute('aria-disabled', btn.disabled ? 'true' : 'false');
+        btn.addEventListener('click', () => onLetterTap(idx));
+        bankRow.appendChild(btn);
+      });
+    }
+
+    function renderTimer(nowMs){
+      const now = (typeof nowMs === 'number') ? nowMs : performance.now();
+      const remainMs = Math.max(0, deadlineAt - now);
+      const remainSec = remainMs / 1000;
+      const pct = Math.max(0, Math.min(1, remainSec / COUNTDOWN_SECONDS));
+      timerFill.style.width = (pct * 100).toFixed(2) + '%';
+      timerEl.setAttribute('aria-valuenow', Math.ceil(remainSec).toString());
+
+      const whole = Math.ceil(remainSec);
+      if(whole !== lastAnnounceSec && whole % 1 === 0){
+        announceEl.textContent = `${whole} seconds remaining`;
+        lastAnnounceSec = whole;
+      }
+    }
+
+    function startTimer(){
+      stopTimer();
+      deadlineAt = performance.now() + COUNTDOWN_SECONDS * 1000;
+      renderTimer();
+      timerHandle = setInterval(()=>{
+        const now = performance.now();
+        if(now >= deadlineAt){
+          renderTimer(now);
+          stopTimer();
+          onTimeout();
         }else{
-          const bi = state.placedIndex[i];
-          if(bi !== null) state.bank[bi].used = false;
-          state.current[i] = '';
-          state.placedIndex[i] = null;
+          renderTimer(now);
+        }
+      }, TICK_MS);
+    }
+    function stopTimer(){ if(timerHandle){ clearInterval(timerHandle); timerHandle = null; } }
+
+    function addTime(seconds){
+      const now = performance.now();
+      const remain = Math.max(0, deadlineAt - now);
+      const added = Math.min((remain + seconds*1000), MAX_TIME_SECONDS*1000);
+      deadlineAt = now + added;
+      renderTimer(now);
+      announceEl.textContent = `Valid word — +${seconds} seconds (capped)`;
+    }
+
+    function startRun(){
+      lives = STARTING_LIVES;
+      level = 1;
+      runStartAt = Date.now();
+      renderLives();
+      renderLevel();
+      nextWord(false);
+    }
+
+    function nextWord(increment){
+      if(increment) level++;
+      renderLevel();
+      answerWord = ANSWER_POOL[randInt(ANSWER_POOL.length)];
+      bank = buildBankFrom(answerWord);
+      current = Array(5).fill("");
+      locked = Array(5).fill(false);
+      placedIndex = Array(5).fill(null);
+      inputsDisabled = false;
+      renderRows();
+      startTimer();
+    }
+
+    function onLetterTap(bankIndex){
+      if(inputsDisabled || isAnimating) return;
+      const b = bank[bankIndex];
+      if(!b || b.used) return;
+
+      // find next unlocked slot
+      const slot = current.findIndex((ch, i) => !locked[i] && ch === '');
+      if(slot === -1) return;
+
+      current[slot] = b.ch;
+      placedIndex[slot] = bankIndex;
+      b.used = true;
+
+      // pop animation on that tile
+      const tile = answerRow.children[slot];
+      tile.classList.remove('pop'); void tile.offsetWidth; tile.classList.add('pop');
+
+      renderRows(); // re-render bank disabled state
+
+      autoSubmitIfFull();
+    }
+
+    function onShuffle(){
+      if(inputsDisabled) return;
+      // shuffle only unused bank letters (keep used/locked positions visually stable)
+      const unused = bank.map((b, i) => (!b.used ? { ch:b.ch, idx:i } : null)).filter(Boolean);
+      const letters = unused.map(u=>u.ch);
+      shuffleArr(letters);
+      unused.forEach((u, k) => { bank[u.idx].ch = letters[k]; });
+      bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
+      renderRows();
+    }
+
+    function onClearAll(){
+      if(inputsDisabled) return;
+      for(let i=0;i<5;i++){
+        if(!locked[i] && current[i] !== ''){
+          const bIdx = placedIndex[i];
+          if(bIdx !== null && bank[bIdx]) bank[bIdx].used = false;
+          current[i] = '';
+          placedIndex[i] = null;
         }
       }
-      renderUI();
-      if(state.lives === 0){ gameOver(); }
-    } else {
+      renderRows();
+    }
+
+    function autoSubmitIfFull(){
+      const filled = current.every((ch, i) => locked[i] || ch !== '');
+      if(!filled) return;
+      evaluateGuess(current.join(''));
+    }
+
+    function evaluateGuess(guess){
+      if(isAnimating) return;
+      if(guess === answerWord){
+        // Correct
+        stopTimer();
+        celebrate();
+        setTimeout(()=> nextWord(true), 420);
+        return;
+      }
+      if(ACCEPTED_SET.has(guess)){
+        // Valid but wrong -> +5s (capped), lock matches, clear others
+        addTime(TIME_BOOST_SECONDS);
+        for(let i=0;i<5;i++){
+          if(current[i] === answerWord[i]){
+            locked[i] = true;
+          }else{
+            // free bank index for this slot
+            const bIdx = placedIndex[i];
+            if(bIdx !== null && bank[bIdx]) bank[bIdx].used = false;
+            current[i] = '';
+            placedIndex[i] = null;
+          }
+        }
+        renderRows();
+        return;
+      }
+      // Invalid -> shake + clear non-locked
       answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
       for(let i=0;i<5;i++){
-        if(state.locked[i]) continue;
-        const bi = state.placedIndex[i];
-        if(bi !== null) state.bank[bi].used = false;
-        state.current[i] = '';
-        state.placedIndex[i] = null;
+        if(!locked[i] && current[i] !== ''){
+          const bIdx = placedIndex[i];
+          if(bIdx !== null && bank[bIdx]) bank[bIdx].used = false;
+          current[i] = '';
+          placedIndex[i] = null;
+        }
       }
-      renderUI();
+      renderRows();
     }
-  }
 
-  function celebrateCorrect(){
-    // Pop only the tiles that were just guessed (ignore previously locked tiles), then advance
-    state.isAnimating = true;
-    state.inputsDisabled = true;
-    const tiles = [...answerRow.children];
-    tiles.forEach((t, i) => {
-      if (!state.locked[i]) {
-        t.classList.remove('pop','popwin');
-        void t.offsetWidth; // restart animation
-        t.classList.add('popwin'); // exaggerated pop just for the win
+    function celebrate(){
+      // motion-only pop on tiles
+      for(let i=0;i<5;i++){
+        const tile = answerRow.children[i];
+        tile.classList.remove('pop'); void tile.offsetWidth; tile.classList.add('pop');
+      }
+    }
+
+    function onTimeout(){
+      lives = Math.max(0, lives - 1);
+      renderLives();
+      revealAndShudder(answerWord);
+      if(lives > 0){
+        setTimeout(()=> nextWord(true), 900);
+      }else{
+        setTimeout(()=> gameOver(), 900);
+      }
+    }
+
+    function revealAndShudder(word){
+      inputsDisabled = true;
+      // Fill all slots with correct word
+      for(let i=0;i<5;i++){
+        current[i] = word[i];
+        locked[i] = false; // irrelevant now
+        placedIndex[i] = null;
+      }
+      renderRows();
+      answerRow.classList.remove('shudder'); void answerRow.offsetWidth; answerRow.classList.add('shudder');
+      announceEl.textContent = `Time’s up — the word was ${word}.`;
+    }
+
+    function gameOver(){
+      stopTimer();
+      inputsDisabled = true;
+      const levelsCompleted = Math.max(0, level - 1);
+      const runMs = Date.now() - runStartAt;
+      const mm = String(Math.floor(runMs/60000)).padStart(2,'0');
+      const ss = String(Math.floor((runMs%60000)/1000)).padStart(2,'0');
+      gameOverBody.textContent = `You reached level ${levelsCompleted}. Time: ${mm}:${ss}`;
+      gameOverModal.classList.add('open');
+      tryAgainBtn.focus();
+    }
+
+    tryAgainBtn.addEventListener('click', () => { gameOverModal.classList.remove('open'); startRun(); });
+
+    // ------------------------------
+    // 6) Keyboard shortcuts (desktop)
+    // ------------------------------
+    document.addEventListener('keydown', (e) => {
+      // ignore when modals open or during reveal
+      if(introModal.classList.contains('open') || gameOverModal.classList.contains('open') || loadingModal.classList.contains('open') || inputsDisabled) return;
+
+      const key = e.key.toUpperCase();
+      if(key === ' '){ e.preventDefault(); onShuffle(); return; }
+      if(key === 'BACKSPACE' || key === 'DELETE'){ e.preventDefault(); onClearAll(); return; }
+      if(key.length === 1 && key >= 'A' && key <= 'Z'){
+        // place leftmost matching unused bank entry into next unlocked slot
+        const idx = bank.findIndex((b) => !b.used && b.ch === key);
+        if(idx !== -1){ onLetterTap(idx); }
       }
     });
-    setTimeout(() => {
-      state.isAnimating = false;
-      state.inputsDisabled = false;
-      nextWord(true);
-    }, 360); // match .popwin duration + tiny buffer
-  }
 
-  function onTimeout(){
-    state.lives = Math.max(0, state.lives - 1);
-    state.inputsDisabled = true;
-    for(let i=0;i<5;i++){
-      state.current[i] = state.answerWord[i];
-    }
-    renderUI();
-    answerRow.classList.remove('shudder'); void answerRow.offsetWidth; answerRow.classList.add('shudder');
-    announce(`Time's up — the word was ${state.answerWord}.`);
-    setTimeout(()=>{
-      if(state.lives > 0){ nextWord(true); }
-      else { gameOver(); }
-      state.inputsDisabled = false;
-    }, 800);
-  }
+    // ------------------------------
+    // 7) Wire up controls & init
+    // ------------------------------
+    shuffleBtn.addEventListener('click', onShuffle);
+    clearBtn.addEventListener('click', onClearAll);
 
-  function gameOver(){
-    stopTimer();
-    const levelsCompleted = Math.max(0, state.level - 1);
-    const secs = Math.round((Date.now() - state.runStartAt)/1000);
-    const mm = String(Math.floor(secs/60)).padStart(2,'0');
-    const ss = String(secs%60).padStart(2,'0');
-    goBody.innerHTML = `You reached level ${levelsCompleted}${secs>0?('<br>Run time ' + mm + ':' + ss ):''}`;
-    setBackdrop(gameoverBackdrop, true);
-  }
+    initTheme();
+    loadWordLists();
+    renderLives();
+    renderLevel();
 
-  // ------------------------------
-  // 10) Keyboard (desktop)
-  // ------------------------------
-  function handleKey(e){
-    if(loadingBackdrop.classList.contains('show') || introBackdrop.classList.contains('show') || gameoverBackdrop.classList.contains('show') || state.inputsDisabled){ return; }
-    const k = e.key;
-    if(k === ' '){ e.preventDefault(); onShuffle(); return; }
-    if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClear(); return; }
-    const m = k.toUpperCase();
-    if(m.length === 1 && m >= 'A' && m <= 'Z'){
-      for(let i=0;i<state.bank.length;i++){
-        const b = state.bank[i];
-        if(!b.used && b.ch === m){ onLetterTap(i); break; }
-      }
-    }
-  }
-  window.addEventListener('keydown', handleKey);
-
-  // ------------------------------
-  // 11) Wire controls
-  // ------------------------------
-  btnShuffle.addEventListener('click', onShuffle);
-  btnClear.addEventListener('click', onClear);
-  btnPlay.addEventListener('click', ()=>{ setBackdrop(introBackdrop,false); startRun(); });
-  btnAgain.addEventListener('click', ()=>{ setBackdrop(gameoverBackdrop,false); startRun(); });
-
-  // ------------------------------
-  // 12) Boot
-  // ------------------------------
-  initTheme();
-  renderUI();
-  loadWordLists();
   </script>
 </body>
 </html>
