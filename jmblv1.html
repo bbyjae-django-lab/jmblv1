@@ -183,7 +183,7 @@ button{ touch-action: manipulation; }
     <!-- 7) Controls -->
     <div class="controls">
       <button class="btn" id="btnShuffle" aria-label="Shuffle letters">Shuffle</button>
-      <button class="btn" id="btnClear" aria-label="Clear all">Clear all</button>
+      <button class="btn" id="btnClear" aria-label="Clear">Clear</button>
     </div>
 
     <!-- spacer -->
@@ -507,7 +507,7 @@ button{ touch-action: manipulation; }
     renderBankRow();
   }
 
-  function onClearAll(){
+  function onClear(){
     for(let i=0;i<5;i++){
       if(state.locked[i]) continue;
       const bi = state.placedIndex[i];
@@ -608,7 +608,7 @@ button{ touch-action: manipulation; }
     if(loadingBackdrop.classList.contains('show') || introBackdrop.classList.contains('show') || gameoverBackdrop.classList.contains('show') || state.inputsDisabled){ return; }
     const k = e.key;
     if(k === ' '){ e.preventDefault(); onShuffle(); return; }
-    if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClearAll(); return; }
+    if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClear(); return; }
     const m = k.toUpperCase();
     if(m.length === 1 && m >= 'A' && m <= 'Z'){
       for(let i=0;i<state.bank.length;i++){
@@ -623,7 +623,7 @@ button{ touch-action: manipulation; }
   // 11) Wire controls
   // ------------------------------
   btnShuffle.addEventListener('click', onShuffle);
-  btnClear.addEventListener('click', onClearAll);
+  btnClear.addEventListener('click', onClear);
   btnPlay.addEventListener('click', ()=>{ setBackdrop(introBackdrop,false); startRun(); });
   btnAgain.addEventListener('click', ()=>{ setBackdrop(gameoverBackdrop,false); startRun(); });
 
