@@ -3,705 +3,628 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>JUMBL</title>
   <style>
-    :root {
+    /* ------------------------------
+       0) Base / Theme / Resets
+       ------------------------------ */
+    :root{
       color-scheme: light dark;
-      --bg: #F6F7FB;
-      --fg: #0F1220;
-      --muted: #6B7280;
-      --accent: #3B82F6;
-      --danger: #EF4444;
-      --track: #ECECEC;
-      --tile-bg: #EDEDED;
-      --tile-fg: #111827;
-      --tile-answer-bg: #FFFFFF;
-      --btn-bg: #FFFFFF;
-      --btn-fg: #0F1220;
-
-      /* imported from uploaded file */
-      --grad1:#FFB36C; --grad2:#FF8FC6; --grad3:#FFA6E6;
-
-      /* Layout-safe sizing for tiles */
-      --tile: clamp(68px, 9.5vw, 84px);
-      --gap: 16px;
-      --row-gap: 18px;
-
-      --radius: 16px;
-      --shadow: 0 10px 24px rgba(0,0,0,.08);
-      --inner: inset 0 1px 0 rgba(255,255,255,.35);
-
-      --timer-h: 12px; /* 12–14px */
-
-      --focus: 2px dotted currentColor;
+      --bg:#F6F7FB; --fg:#0F1220; --muted:#6B7280; --track:#ECECEC;
+      --tile-bg:#FFFFFF; --tile-fg:#111827; --btn-bg:#FFFFFF; --btn-fg:#0F1220;
+      --accent:#3B82F6; --danger:#EF4444; --shadow:0 6px 20px rgba(0,0,0,.08); --radius:16px;
+      --gap:10px;
+      --maxw:600px;
     }
-    :root[data-theme="dark"] {
-      /* dark palette + gradients from uploaded file */
-      --bg:#0f1115; --fg:#e6e7eb; --muted:#9aa1aa;
-      --track:#1f2430; --tile-bg:#171a20; --tile-fg:#e6e7eb;
-      --tile-answer-bg:#171a20; --btn-bg:#12161e; --btn-fg:#e6e7eb;
-      --grad1:#9AA9FF; --grad2:#71D3CF; --grad3:#46E39C;
+    html.dark{
+      color-scheme: dark;
+      --bg:#0F1115; --fg:#E6E7EB; --muted:#9AA1AA; --track:#1F2430;
+      --tile-bg:#171A20; --tile-fg:#F7F7FA; --btn-bg:#171A20; --btn-fg:#E6E7EB;
+      --accent:#7CB2FF; --danger:#FF6B88; --shadow:0 8px 24px rgba(0,0,0,.35); --radius:16px;
     }
 
-    html, body { height: 100%; }
-    body {
-      min-height: 100svh;
-      padding-bottom: max(20px, env(safe-area-inset-bottom));
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: var(--bg);
-      color: var(--fg);
-      touch-action: manipulation;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      -webkit-tap-highlight-color: transparent; /* remove tap highlight; keep keyboard focus styles */
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
+      font: 16px/1.4 system-ui,-apple-system, "SF Pro Text", Segoe UI, Roboto, Arial, sans-serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      -webkit-tap-highlight-color: transparent; /* keep focus outlines via :focus-visible */
+      height:100dvh; min-height:100dvh; overflow:hidden; overscroll-behavior:none;
     }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
-    .wrap {
-      max-width: 600px;
+    /* Dynamic viewport sizing */
+    :root{ --vh:100vh; --vw:100vw; }
+
+    /* App shell */
+    .app{
+      width: min(var(--vw, 100vw), var(--maxw));
       margin: 0 auto;
-      padding: 16px 16px 40px;
-      display: grid;
-      grid-template-rows: auto auto auto auto 1fr; /* header, status, timer, tiles, spacer */
-      gap: 14px;
+      padding:
+        calc(env(safe-area-inset-top) + 16px)
+        16px
+        calc(env(safe-area-inset-bottom) + 18px);
+      display:grid; grid-template-rows:auto auto auto auto auto auto auto 1fr; gap:14px;
     }
 
-    /* Header: three-cell layout to keep title perfectly centered */
-    header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 8px;
-      padding-top: env(safe-area-inset-top);
+    /* Header */
+    .header{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+    .title{ text-align:center; font-weight:800; letter-spacing:0.12em; font-size: clamp(18px, 2.4vw, 22px); }
+    .theme-wrap{ justify-self:end; }
+    .icon-btn{
+      appearance:none; border:1px solid transparent; background:var(--btn-bg); color:var(--btn-fg);
+      border-radius:12px; padding:10px; box-shadow:var(--shadow); cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      transition: transform .08s ease, box-shadow .08s ease; /* press animation */
     }
-    .hdr-left { justify-self: start; }
-    .hdr-title {
-      justify-self: center; font-weight: 800; letter-spacing: 1px;
-      /* gradient text like uploaded index.html */
-      background: linear-gradient(90deg,var(--grad1) 0%,var(--grad2) 45%,var(--grad3) 100%);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent; color: transparent;
-    }
-    .hdr-right { justify-self: end; }
+    .icon-btn:active{ transform: scale(.96); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    .icon{ width:20px; height:20px; display:block; }
 
-    .title { font-size: clamp(20px, 3.8vw, 28px); }
+    /* Lives */
+    .lives{ display:flex; gap:10px; justify-content:center; align-items:center; }
+    .pip{ width:10px; height:10px; border-radius:50%; background:currentColor; opacity:.3; }
+    .pip.on{ opacity:1; }
 
-    /* Theme toggle */
-    .toggle {
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-      border: 1px solid rgba(0,0,0,.08);
-      border-radius: 9999px;
-      padding: 8px 12px;
-      box-shadow: var(--inner), var(--shadow);
-      cursor: pointer;
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 14px;
-      user-select: none;
-      transition: transform 120ms ease;
-    }
-    .toggle:focus-visible { outline: var(--focus); outline-offset: 3px; }
-    .toggle.press { transform: scale(0.96); }
+    /* Level */
+    .level{ text-align:center; color:var(--muted); font-weight:600; }
 
-    /* Status row */
-    .status {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      font-size: 14px;
-      color: var(--muted);
+    /* Timer */
+    .timer-card{ background:var(--btn-bg); border-radius: var(--radius); padding:12px; box-shadow:var(--shadow); }
+    .timer{
+      height:14px; background:var(--track); border-radius:9999px; position:relative; overflow:hidden;
     }
-    .level { justify-self: start; }
-    .lives { justify-self: center; display: inline-flex; gap: 8px; align-items: center; }
-    .time { justify-self: end; font-variant-numeric: tabular-nums; }
-    .life-dot { width: 10px; height: 10px; border-radius: 9999px; background: currentColor; opacity: 1; }
-    .life-dot.lost { opacity: .25; }
-
-    /* Timer bar */
-    .timer {
-      height: var(--timer-h);
-      background: var(--track);
-      border-radius: 9999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .timer-fill {
-      position: absolute; inset: 0 auto 0 0; /* left anchored */
-      width: 100%;
-      border-radius: inherit;
-      /* gradient fill like uploaded file */
-      background: linear-gradient(90deg,var(--grad1) 0%,var(--grad2) 45%,var(--grad3) 100%);
-      transition: width 200ms linear; /* update ~200ms */
+    .fill{
+      position:absolute; left:0; top:0; bottom:0; width:100%;
+      background:var(--accent); border-radius:9999px;
+      transition: width 100ms linear; /* TICK_MS */
     }
 
-    /* Tiles area */
-    .tiles { display: grid; justify-content: center; }
-
-    .answer, .bank {
-      display: inline-grid;
-      grid-template-columns: repeat(5, var(--tile));
-      gap: var(--gap);
-      width: min-content;
-      margin-inline: auto;
-      align-items: start;
+    /* Rows (Answer above Bank) */
+    .row{ display:grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
+    .tile, .bank-btn{
+      background:var(--tile-bg); color:var(--tile-fg); border:1px solid transparent;
+      border-radius:14px; display:grid; place-items:center; font-weight:800; font-size: clamp(20px, 5vw, 28px);
+      aspect-ratio:1/1; min-width:56px; min-height:56px; box-shadow:var(--shadow);
+      user-select:none;
     }
-    .answer { margin-block-end: var(--row-gap); }
-    .bank   { margin-block-end: 14px; }
+    .tile.locked{ opacity:.96; outline:2px solid var(--muted); }
+    .tile.empty{ color:transparent; }
 
-    .slot, .letter {
-      width: var(--tile);
-      height: var(--tile);
-      display: grid;
-      place-items: center;
-      border-radius: var(--radius);
-      box-shadow: var(--inner), var(--shadow);
-      user-select: none;
-      font-weight: 700;
-      letter-spacing: .5px;
-      font-size: clamp(22px, 3.2vw, 28px);
-    }
-    /* Answer tiles now use gradient background like uploaded file */
-    .slot { background: linear-gradient(90deg,var(--grad1) 0%,var(--grad2) 45%,var(--grad3) 100%); color: #fff; }
-    .slot.locked { opacity: 1; outline: 2px solid rgba(0,0,0,.12); outline-offset: -2px; }
-    /* Bank tiles remain flat */
-    .letter { background: var(--tile-bg); color: var(--tile-fg); cursor: pointer; }
-    .letter.used { opacity: .3; cursor: default; }
+    .bank-btn{ cursor:pointer; }
+    .bank-btn[disabled]{ opacity:.35; cursor:not-allowed; }
 
     /* Controls */
-    .controls { display: flex; gap: 12px; justify-content: center; }
-    .btn {
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-      border: 1px solid rgba(0,0,0,.08);
-      border-radius: 12px;
-      padding: 12px 16px;
-      min-width: 120px;
-      text-align: center;
-      box-shadow: var(--inner), var(--shadow);
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 120ms ease;
+    .controls{ display:grid; grid-template-columns:1fr 1fr; gap: var(--gap); }
+    .btn{
+      appearance:none; border:1px solid transparent; background:var(--btn-bg); color:var(--btn-fg);
+      border-radius:16px; padding:14px; font-weight:700; box-shadow:var(--shadow); cursor:pointer;
+      transition: transform .1s ease, box-shadow .1s ease;
     }
-    .btn:focus-visible { outline: var(--focus); outline-offset: 3px; }
-    .btn.press { transform: scale(0.96); }
+    .btn:active{ transform: scale(.96); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
 
-    /* Animations (motion only; no color flash) */
-    @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.12)} 100%{transform:scale(1)} }
-    @keyframes shake { 0%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} 100%{transform:translateX(0)} }
-    @keyframes wiggle { 0%{transform:rotate(0)} 25%{transform:rotate(-2.5deg)} 50%{transform:rotate(2.5deg)} 75%{transform:rotate(-2deg)} 100%{transform:rotate(0)} }
-    @keyframes shudder { 0%{transform:translateX(0)} 10%{transform:translateX(-2px)} 20%{transform:translateX(2px)} 30%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 50%{transform:translateX(-1px)} 60%{transform:translateX(1px)} 70%{transform:translateX(-1px)} 80%{transform:translateX(1px)} 90%{transform:translateX(0)} 100%{transform:translateX(0)} }
+    /* Animations (GPU-friendly, motion-only) */
+    @keyframes pop { 0%{transform:scale(.92)} 100%{transform:scale(1)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+    @keyframes jiggle { 0%,100%{transform:translateY(0)} 25%{transform:translateY(-2px)} 75%{transform:translateY(2px)} }
+    @keyframes shudder { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-2px)} 20%{transform:translateX(2px)} 30%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 50%{transform:translateX(-1px)} 60%{transform:translateX(1px)} 70%{transform:translateX(-1px)} 80%{transform:translateX(1px)} 90%{transform:translateX(0)} }
 
-    /* Imported cues from uploaded file */
-    @keyframes jiggle{ 0%{transform:rotate(0)}25%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}75%{transform:rotate(-.8deg)}100%{transform:rotate(0)} }
-    .jiggle{ animation:jiggle .25s ease both; }
+    .pop{ animation: pop .2s ease both; }
+    .shake{ animation: shake .22s ease both; }
+    .jiggle{ animation: jiggle .26s ease both; }
+    .shudder{ animation: shudder .8s ease both; }
 
-    /* slot-pop when a letter is placed */
-    @keyframes slotPop{
-      0%{ transform:scale(1); box-shadow:none }
-      50%{ transform:scale(1.08); box-shadow:0 0 8px rgba(255,150,200,.25) }
-      100%{ transform:scale(1); box-shadow:none }
-    }
-    .slot-pop{ animation:slotPop .22s cubic-bezier(.3,1.4,.4,1) forwards; }
-
-    /* celebrate (correct) */
-    @keyframes popWiggle{
-      0%{transform:scale(1) rotate(0)}
-      20%{transform:scale(1.12) rotate(.6deg)}
-      40%{transform:scale(1.08) rotate(-.6deg)}
-      60%{transform:scale(1.10) rotate(.4deg)}
-      80%{transform:scale(1.04) rotate(-.3deg)}
-      100%{transform:scale(1) rotate(0)}
-    }
-    .answer.celebrate .slot{
-      animation:popWiggle 520ms cubic-bezier(.2,.8,.2,1) both;
-      animation-delay:calc(var(--i,0) * 45ms);
-      will-change:transform;
-    }
-
-    /* Reduced motion: disable shakes/wiggles/shudders and transitions */
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition: none !important; }
+    @media (prefers-reduced-motion: reduce){
+      .pop,.shake,.jiggle,.shudder{ animation-duration:.05s; animation-iteration-count:1; }
+      .fill{ transition:none; }
     }
 
     /* Modals */
-    .modal-backdrop {
-      position: fixed; inset: 0; display: none;
-      background: rgba(0,0,0,.45);
-      align-items: center; justify-content: center;
-      z-index: 50;
-    }
-    .modal-backdrop.show { display: flex; }
-    .modal {
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      max-width: 520px;
-      margin: 0 16px;
-      padding: 20px 20px 16px;
-    }
-    .modal h2 { margin: 0 0 8px; font-size: 20px; }
-    .modal p { margin: 0 0 16px; color: var(--muted); line-height: 1.4; }
-    .modal .actions { display: flex; justify-content: flex-end; }
+    .backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:10; }
+    .backdrop.show{ display:grid; place-items:center; }
+    .modal{ width:min(92vw, 520px); background:var(--btn-bg); color:var(--btn-fg); border-radius:24px; padding:22px; box-shadow:var(--shadow); }
+    .modal h2{ margin:0 0 8px; font-size:20px; }
+    .modal p{ margin:10px 0; color:var(--muted); }
+    .modal .actions{ margin-top:14px; display:flex; gap:10px; justify-content:flex-end; }
 
-    .visually-hidden { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
-
-    /* Helper to disable the app behind modals */
-    .inert { pointer-events: none; user-select: none; filter: saturate(.6) brightness(.9); }
+    /* Focus visible outlines retained */
+    :focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
 </head>
 <body>
-  <div class="wrap" id="app" aria-live="off">
-    <header>
-      <div class="hdr-left" aria-hidden="true"></div>
-      <div class="hdr-title title" aria-label="Game title">JUMBL</div>
-      <div class="hdr-right">
-        <button id="themeToggle" class="toggle" aria-pressed="false" title="Toggle theme" type="button">
-          <span aria-hidden="true">◐</span>
-          <span>Theme</span>
+  <div class="app" id="app" aria-live="polite">
+    <!-- 1) Header -->
+    <header class="header">
+      <div></div>
+      <div class="title" aria-label="Game title">JUMBL</div>
+      <div class="theme-wrap">
+        <button class="icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+          <svg class="icon" id="iconSun" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4.5a1 1 0 0 1 1 1V7a1 1 0 1 1-2 0V5.5a1 1 0 0 1 1-1Zm0 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm7.5-3.5a1 1 0 0 1 1 1V14a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1ZM12 17a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V18a1 1 0 0 1 1-1ZM4.5 12a1 1 0 0 1 1-1H7a1 1 0 1 1 0 2H5.5a1 1 0 0 1-1-1Zm10.95-5.657a1 1 0 0 1 1.414 0l1.06 1.06a1 1 0 1 1-1.413 1.415l-1.061-1.06a1 1 0 0 1 0-1.415Zm0 11.314a1 1 0 0 1 1.414 0l1.06 1.06a1 1 0 1 1-1.413 1.415l-1.061-1.06a1 1 0 0 1 0-1.415ZM6.076 6.904a1 1 0 0 1 1.415 0L8.55 7.964A1 1 0 1 1 7.136 9.38L6.076 8.318a1 1 0 0 1 0-1.414Zm0 10.192a1 1 0 0 1 1.415 0l1.06 1.06A1 1 0 0 1 7.136 19.57l-1.06-1.06a1 1 0 0 1 0-1.414Z"/></svg>
+          <svg class="icon" id="iconMoon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
         </button>
       </div>
     </header>
 
-    <div class="status" aria-label="Status">
-      <div class="level" id="levelLabel">Level 1</div>
-      <div class="lives" id="lives" aria-label="Lives" aria-live="polite">
-        <span class="life-dot" data-idx="0"></span>
-        <span class="life-dot" data-idx="1"></span>
-        <span class="life-dot" data-idx="2"></span>
+    <!-- 2) Lives -->
+    <div class="lives" aria-label="Lives">
+      <span class="pip" id="pip1"></span>
+      <span class="pip" id="pip2"></span>
+      <span class="pip" id="pip3"></span>
+      <span class="sr-only" id="livesText">Lives: 3 of 3</span>
+    </div>
+
+    <!-- 3) Level label -->
+    <div class="level" id="level">Level 1</div>
+
+    <!-- 4) Timer -->
+    <div class="timer-card">
+      <div class="timer" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25" aria-label="Time remaining">
+        <div class="fill" id="timerFill" style="width:100%"></div>
       </div>
-      <div class="time" id="timeLabel">00:25</div>
     </div>
 
-    <div class="timer" role="progressbar" aria-label="Time remaining" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25">
-      <div class="timer-fill" id="timerFill"></div>
+    <!-- 5) Answer row (above) -->
+    <div class="row" id="answerRow" aria-label="Your guess"></div>
+
+    <!-- 6) Letter bank (below) -->
+    <div class="row" id="bankRow" aria-label="Letter bank"></div>
+
+    <!-- 7) Controls -->
+    <div class="controls">
+      <button class="btn" id="btnShuffle" aria-label="Shuffle letters">Shuffle ⤮</button>
+      <button class="btn" id="btnClear" aria-label="Clear all">Clear all ⌫</button>
     </div>
 
-    <div class="tiles">
-      <div class="answer" id="answerRow" aria-label="Answer row"></div>
-      <div class="bank" id="bankRow" aria-label="Letter bank"></div>
-    </div>
-
-    <div class="controls" aria-label="Controls">
-      <button class="btn" id="shuffleBtn" type="button">Shuffle</button>
-      <button class="btn" id="clearBtn" type="button">Clear all</button>
-    </div>
-
-    <!-- filler to push content -->
+    <!-- spacer -->
     <div></div>
   </div>
 
-  <!-- Intro Modal (first successful load) -->
-  <div class="modal-backdrop" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
-    <div class="modal">
-      <h2 id="introTitle">Welcome to JUMBL</h2>
-      <p>Tap letters to form the word. Auto-submit on 5 letters. Valid but wrong: lose 1 life and we’ll lock letters in the right spot. Invalid: shake and clear. You have 3 lives. Timer refills each level.</p>
+  <!-- ARIA live announcer -->
+  <div class="sr-only" id="announcer" aria-live="polite"></div>
+
+  <!-- Loading / Retry modal -->
+  <div class="backdrop" id="loadingBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loadingTitle">
+      <h2 id="loadingTitle">Loading word lists…</h2>
+      <p id="loadingText">Fetching…</p>
       <div class="actions">
-        <button class="btn" id="playBtn" type="button">play</button>
+        <button class="btn" id="btnRetry" disabled>Retry</button>
       </div>
     </div>
   </div>
 
-  <!-- Game Over Modal -->
-  <div class="modal-backdrop" id="gameOverModal" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
-    <div class="modal">
-      <h2 id="gameOverTitle">no more lives</h2>
-      <p id="gameOverSub"></p>
+  <!-- Intro / Rules modal -->
+  <div class="backdrop" id="introBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+      <h2 id="rulesTitle">RULES</h2>
+      <p>Use the jumbled letters to make a real 5-letter word.<br>
+         Beat the clock to level up and refill the timer.<br>
+         If you enter a real word that's not the answer, you lose a life; correct letters lock in place.<br>
+         If the timer hits zero, we reveal the word and you lose a life.</p>
+      <p>25 seconds per word • 3 lives</p>
+      <p>Tip: ⤮ Shuffle letters • ⌫ Clear all</p>
       <div class="actions">
-        <button class="btn" id="retryBtn" type="button">try again ➜</button>
+        <button class="btn" id="btnPlay">Play</button>
       </div>
     </div>
   </div>
 
-  <!-- Fetch error modal -->
-  <div class="modal-backdrop" id="fetchError" role="dialog" aria-modal="true" aria-labelledby="fetchErrTitle">
-    <div class="modal">
-      <h2 id="fetchErrTitle">Can’t load word lists</h2>
-      <p>Serve files over HTTP (e.g., <code>python3 -m http.server</code>) to load word lists.</p>
+  <!-- Game Over modal -->
+  <div class="backdrop" id="gameoverBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="goTitle">
+      <h2 id="goTitle">Game Over</h2>
+      <p id="goBody">You reached level 0.</p>
+      <div class="actions">
+        <button class="btn" id="btnAgain">Try again ➜</button>
+      </div>
     </div>
   </div>
-
-  <!-- Live regions -->
-  <div class="visually-hidden" aria-live="polite" id="liveTimer"></div>
-  <div class="visually-hidden" aria-live="polite" id="liveEvents"></div>
 
   <script>
-  (function(){
-    // ===== State =====
-    const TIMER_MS = 25000;
-    const TICK_MS = 200;
-    const THEME_KEY = 'JUMBL_THEME';
+  // ------------------------------
+  // 1) Constants & State
+  // ------------------------------
+  const COUNTDOWN_SECONDS = 25;
+  const STARTING_LIVES = 3;
+  const TICK_MS = 100;
 
-    let ANSWERS = [];
-    let ACCEPTED_SET = new Set();
+  const state = {
+    // word lists
+    ANSWER_POOL: [],
+    ACCEPTED_SET: new Set(),
 
-    let answerWord = '';
-    let locked = Array(5).fill(false);
-    let current = Array(5).fill('');
-    let placedIndex = Array(5).fill(null); // slot -> bank index
-    let bank = []; // [{ch, used}]
-    let lives = 3;
-    let level = 1;
-    let runStart = 0;
-    let deadline = 0;
-    let tickHandle = null;
-    let busy = false; // guard double submit
-    let revealing = false; // disabling inputs during reveal
+    // authoritative game state
+    answerWord: '',
+    bank: [], // [{ch, used}] length 5
+    current: Array(5).fill(''),
+    locked: Array(5).fill(false),
+    placedIndex: Array(5).fill(null), // slot -> bank index
 
-    // ===== DOM refs =====
-    const app = document.getElementById('app');
-    const timerEl = document.querySelector('.timer');
-    const timerFill = document.getElementById('timerFill');
-    const timeLabel = document.getElementById('timeLabel');
-    const levelLabel = document.getElementById('levelLabel');
-    const livesEl = document.getElementById('lives');
-    const answerRow = document.getElementById('answerRow');
-    const bankRow = document.getElementById('bankRow');
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const introModal = document.getElementById('introModal');
-    const playBtn = document.getElementById('playBtn');
-    const gameOverModal = document.getElementById('gameOverModal');
-    const gameOverSub = document.getElementById('gameOverSub');
-    const retryBtn = document.getElementById('retryBtn');
-    const fetchError = document.getElementById('fetchError');
-    const liveTimer = document.getElementById('liveTimer');
-    const liveEvents = document.getElementById('liveEvents');
-    const themeToggle = document.getElementById('themeToggle');
+    lives: STARTING_LIVES,
+    level: 1,
+    runStartAt: 0,
 
-    // ===== Utilities =====
-    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
-    function fmtMMSS(ms){
-      const s = Math.max(0, Math.floor(ms/1000));
-      const mm = String(Math.floor(s/60)).padStart(2,'0');
-      const ss = String(s%60).padStart(2,'0');
-      return mm+':'+ss;
+    deadlineAt: 0,
+    timerHandle: null,
+    lastAnnouncedSec: COUNTDOWN_SECONDS,
+    isAnimating: false,
+
+    // UI guards
+    inputsDisabled: false,
+    listsLoaded: false,
+  };
+
+  // ------------------------------
+  // 2) Utilities
+  // ------------------------------
+  const $ = sel => document.querySelector(sel);
+  const app = $('#app');
+  const answerRow = $('#answerRow');
+  const bankRow = $('#bankRow');
+  const levelEl = $('#level');
+  const timerFill = $('#timerFill');
+  const announcer = $('#announcer');
+  const livesText = $('#livesText');
+
+  // Modals
+  const loadingBackdrop = $('#loadingBackdrop');
+  const loadingText = $('#loadingText');
+  const btnRetry = $('#btnRetry');
+  const introBackdrop = $('#introBackdrop');
+  const btnPlay = $('#btnPlay');
+  const gameoverBackdrop = $('#gameoverBackdrop');
+  const goBody = $('#goBody');
+  const btnAgain = $('#btnAgain');
+
+  // Controls
+  const btnShuffle = $('#btnShuffle');
+  const btnClear = $('#btnClear');
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+  function randInt(n){ return Math.floor(Math.random()*n); }
+  function shuffleArray(arr){
+    for(let i=arr.length-1;i>0;i--){ const j = randInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+    return arr;
+  }
+  function announce(txt){ announcer.textContent = txt; }
+  function setBackdrop(backdrop, show){ backdrop.classList.toggle('show', !!show); if(show){
+      // Focus first button in modal if present
+      const btn = backdrop.querySelector('button'); if(btn) setTimeout(()=>btn.focus(), 0);
+    } }
+
+  // ------------------------------
+  // 3) Theme (sessionStorage: 'jumbl-theme')
+  // ------------------------------
+  const THEME_KEY = 'jumbl-theme';
+  function applyTheme(theme){
+    const isDark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    // swap icon visibility
+    $('#iconSun').style.display = isDark ? 'none':'block';
+    $('#iconMoon').style.display = isDark ? 'block':'none';
+  }
+  function initTheme(){
+    let t = sessionStorage.getItem(THEME_KEY);
+    if(!t){ t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+    applyTheme(t);
+  }
+  $('#themeToggle').addEventListener('click', ()=>{
+    const nowDark = !document.documentElement.classList.contains('dark');
+    applyTheme(nowDark ? 'dark' : 'light');
+    sessionStorage.setItem(THEME_KEY, nowDark ? 'dark' : 'light');
+  });
+
+  // ------------------------------
+  // 4) Dynamic viewport vars (--vh, --vw)
+  // ------------------------------
+  function updateViewportVars(){
+    const vv = window.visualViewport;
+    const w = vv ? vv.width : window.innerWidth;
+    const h = vv ? vv.height : window.innerHeight;
+    document.documentElement.style.setProperty('--vw', w + 'px');
+    document.documentElement.style.setProperty('--vh', h + 'px');
+  }
+  updateViewportVars();
+  window.addEventListener('resize', updateViewportVars, {passive:true});
+  window.addEventListener('orientationchange', updateViewportVars, {passive:true});
+  window.addEventListener('pageshow', updateViewportVars, {passive:true});
+  if(window.visualViewport){ visualViewport.addEventListener('resize', updateViewportVars, {passive:true}); visualViewport.addEventListener('scroll', updateViewportVars, {passive:true}); }
+
+  // ------------------------------
+  // 5) Loading word lists
+  // ------------------------------
+  async function loadWordLists(){
+    setBackdrop(loadingBackdrop, true);
+    loadingText.textContent = 'Fetching…';
+    btnRetry.disabled = true;
+    try{
+      const [aRes, gRes] = await Promise.all([
+        fetch('answers.txt', {cache:'no-store'}),
+        fetch('guesses.txt', {cache:'no-store'})
+      ]);
+      if(!aRes.ok || !gRes.ok) throw new Error('HTTP error');
+      const [aText, gText] = await Promise.all([aRes.text(), gRes.text()]);
+      const re = /^[A-Z]{5}$/;
+      const answers = aText.split(/\r?\n/).map(s=>s.trim().toUpperCase()).filter(s=>re.test(s));
+      const guesses = gText.split(/\r?\n/).map(s=>s.trim().toUpperCase()).filter(s=>re.test(s));
+      if(!answers.length || !guesses.length) throw new Error('Empty lists');
+      state.ANSWER_POOL = answers;
+      state.ACCEPTED_SET = new Set(guesses);
+      state.listsLoaded = true;
+      loadingText.textContent = `Loaded ${answers.length} answers, ${guesses.length} guesses.`;
+      // Small delay to show status then proceed
+      setTimeout(()=>{ setBackdrop(loadingBackdrop, false); setBackdrop(introBackdrop, true); }, 400);
+    }catch(err){
+      loadingText.innerHTML = 'Could not load word lists.\n\nTip: Serve files over HTTP (e.g., <code>python3 -m http.server</code>) and ensure <code>answers.txt</code> and <code>guesses.txt</code> are beside <code>index.html</code>.';
+      btnRetry.disabled = false;
     }
-    function choice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-    function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+  }
+  $('#btnRetry').addEventListener('click', ()=> loadWordLists());
 
-    function pressFx(el){ el.classList.add('press'); setTimeout(()=>el.classList.remove('press'), 140); }
-
-    function setThemeExplicit(theme){
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem(THEME_KEY, theme);
-      themeToggle.setAttribute('aria-pressed', String(theme==='dark'));
+  // ------------------------------
+  // 6) Rendering helpers
+  // ------------------------------
+  function renderLives(){
+    for(let i=1;i<=3;i++){
+      const el = $('#pip'+i);
+      el.classList.toggle('on', i <= state.lives);
     }
-    function initTheme(){
-      const saved = localStorage.getItem(THEME_KEY);
-      if(saved){ document.documentElement.setAttribute('data-theme', saved); themeToggle.setAttribute('aria-pressed', String(saved==='dark')); return; }
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-      themeToggle.setAttribute('aria-pressed', String(prefersDark));
-    }
+    livesText.textContent = `Lives: ${state.lives} of ${STARTING_LIVES}`;
+  }
 
-    // ===== Rendering =====
-    function renderLives(){
-      const dots = livesEl.querySelectorAll('.life-dot');
-      dots.forEach((dot, i)=>{ dot.classList.toggle('lost', i >= lives); });
-      livesEl.setAttribute('aria-label', `Lives: ${lives} of 3`);
-    }
+  function renderLevel(){ levelEl.textContent = `Level ${state.level}`; }
 
-    function mountTiles(){
-      answerRow.innerHTML = '';
-      bankRow.innerHTML = '';
-      for(let i=0;i<5;i++){
-        const s = document.createElement('div');
-        s.className = 'slot';
-        s.setAttribute('data-slot', String(i));
-        s.style.setProperty('--i', i); // used for celebrate stagger
-        s.textContent = current[i] || '';
-        if(locked[i]) s.classList.add('locked');
-        answerRow.appendChild(s);
-      }
-      for(let i=0;i<5;i++){
-        const b = document.createElement('div');
-        b.className = 'letter';
-        b.setAttribute('data-bank', String(i));
-        b.textContent = bank[i].ch;
-        if(bank[i].used) b.classList.add('used');
-        b.addEventListener('click', ()=> onLetterTap(i));
-        bankRow.appendChild(b);
-      }
-    }
-
-    function rerenderAnswer(){
-      for(let i=0;i<5;i++){
-        const s = answerRow.children[i];
-        s.textContent = current[i] || '';
-        s.classList.toggle('locked', !!locked[i]);
-      }
-    }
-    function rerenderBank(){
-      for(let i=0;i<5;i++){
-        const b = bankRow.children[i];
-        b.textContent = bank[i].ch;
-        b.classList.toggle('used', !!bank[i].used);
-      }
-    }
-
-    // ===== Data & Loading =====
-    async function loadWordLists(){
-      try {
-        const [a, g] = await Promise.all([
-          fetch('answers.txt'),
-          fetch('guesses.txt')
-        ]);
-        if(!a.ok || !g.ok) throw new Error('Fetch failed');
-        const [answersRaw, guessesRaw] = await Promise.all([a.text(), g.text()]);
-        const clean = (txt)=> txt.split(/\r?\n/).map(s=>s.trim().toUpperCase()).filter(s=>/^[A-Z]{5}$/.test(s));
-        ANSWERS = clean(answersRaw);
-        ACCEPTED_SET = new Set(clean(guessesRaw));
-        if(!ANSWERS.length || !ACCEPTED_SET.size) throw new Error('Empty lists');
-        showIntro();
-      } catch (err){
-        console.error(err);
-        fetchError.classList.add('show');
-      }
-    }
-
-    // ===== Game flow =====
-    function startGame(){
-      hideAllModals();
-      app.classList.remove('inert');
-      lives = 3; level = 1; runStart = Date.now();
-      levelLabel.textContent = `Level ${level}`;
-      renderLives();
-      pickNewAnswer();
-      startTimer(true);
-    }
-
-    function nextLevel(){
-      level += 1;
-      levelLabel.textContent = `Level ${level}`;
-      pickNewAnswer();
-      startTimer(true);
-    }
-
-    function pickNewAnswer(){
-      answerWord = choice(ANSWERS);
-      locked = Array(5).fill(false);
-      current = Array(5).fill('');
-      placedIndex = Array(5).fill(null);
-      buildBankFrom(answerWord);
-      mountTiles();
-    }
-
-    function buildBankFrom(word){
-      bank = word.split('').map(ch=>({ ch, used:false }));
-      shuffleInPlace(bank);
-    }
-
-    function refreshShuffle(){
-      const unused = [];
-      for(let i=0;i<5;i++) if(!bank[i].used) unused.push(bank[i]);
-      shuffleInPlace(unused);
-      // Put back shuffled unused into their original unused slots order
-      let j=0; for(let i=0;i<5;i++){ if(!bank[i].used){ bank[i] = unused[j++]; } }
-      bankRow.classList.add('jiggle');          // use jiggle from uploaded file
-      setTimeout(()=>bankRow.classList.remove('jiggle'), 300);
-      rerenderBank();
-    }
-
-    function onLetterTap(bankIdx){
-      if(revealing || busy) return;
-      if(bank[bankIdx].used) return;
-      // find next unlocked slot
-      let slot = -1;
-      for(let i=0;i<5;i++){ if(!locked[i] && !current[i]) { slot = i; break; } }
-      if(slot === -1) return; // full or all locked
-      current[slot] = bank[bankIdx].ch;
-      placedIndex[slot] = bankIdx;
-      bank[bankIdx].used = true;
-      rerenderAnswer();
-
-      // slot-pop animation on the just-filled slot
-      requestAnimationFrame(()=>{
-        const el = answerRow.children[slot];
-        if(el){ el.classList.remove('slot-pop'); void el.offsetWidth; el.classList.add('slot-pop'); }
-      });
-
-      rerenderBank();
-      autoSubmitIfFull();
-    }
-
-    function onClearAll(){
-      if(revealing || busy) return;
-      for(let i=0;i<5;i++){
-        if(!locked[i] && current[i]){
-          const idx = placedIndex[i];
-          if(idx != null) bank[idx].used = false;
-          current[i] = '';
-          placedIndex[i] = null;
-        }
-      }
-      rerenderAnswer();
-      rerenderBank();
-    }
-
-    function onShuffle(){ if(revealing || busy) return refreshShuffle(); }
-
-    function autoSubmitIfFull(){
-      // if all 5 slots filled or locked slots already filled + others filled
-      const filled = current.every((ch,i)=> ch || locked[i]);
-      const noBlanks = current.every((ch,i)=> locked[i] || !!ch);
-      if(!filled || !noBlanks) return;
-      evaluateGuess(current.join(''));
-    }
-
-    function evaluateGuess(guess){
-      if(busy || revealing) return; busy = true;
-      if(guess === answerWord){
-        // Correct: celebrate (pop-wiggle) like uploaded file, no color flash
-        answerRow.classList.add('celebrate');
-        setTimeout(()=>{ answerRow.classList.remove('celebrate'); busy=false; nextLevel(); }, 740);
-        return;
-      }
-      if(ACCEPTED_SET.has(guess)){
-        // Valid but wrong → lose life; lock correct letters; clear others
-        lives = Math.max(0, lives-1);
-        renderLives();
-        lockCorrectFrom(guess);
-        clearUnlocked();
-        answerRow.classList.add('shake');
-        setTimeout(()=>{
-          answerRow.classList.remove('shake');
-          if(lives === 0){ busy=false; gameOver(); } else { busy=false; }
-        }, 240);
-      } else {
-        // Invalid → shake + clear, no life lost
-        clearUnlocked();
-        answerRow.classList.add('shake');
-        setTimeout(()=>{ answerRow.classList.remove('shake'); busy=false; }, 220);
-      }
-    }
-
-    function lockCorrectFrom(guess){
-      for(let i=0;i<5;i++){
-        if(guess[i] === answerWord[i]){
-          locked[i] = true;
-        }
-      }
-      rerenderAnswer();
-    }
-
-    function clearUnlocked(){
-      for(let i=0;i<5;i++){
-        if(!locked[i] && current[i]){
-          const idx = placedIndex[i];
-          if(idx != null) bank[idx].used = false;
-          current[i] = '';
-          placedIndex[i] = null;
-        }
-      }
-      rerenderAnswer();
-      rerenderBank();
-    }
-
-    // ===== Timer =====
-    function startTimer(fullRefill=true){
-      if(tickHandle) { clearInterval(tickHandle); tickHandle = null; }
-      deadline = Date.now() + TIMER_MS;
-      if(fullRefill){ timerFill.style.width = '100%'; }
-      let lastAnnounced = Infinity; // force announce first change
-      const tick = () => {
-        const remaining = clamp(deadline - Date.now(), 0, TIMER_MS);
-        const pct = (remaining / TIMER_MS) * 100;
-        timerFill.style.width = pct + '%'; // anchored left; drains right→left
-        timeLabel.textContent = fmtMMSS(remaining);
-        const secs = Math.floor(remaining/1000);
-        if(secs !== lastAnnounced){
-          lastAnnounced = secs;
-          liveTimer.textContent = `${secs} seconds remaining`;
-          timerEl.setAttribute('aria-valuenow', String(secs));
-        }
-        if(remaining <= 0){ clearInterval(tickHandle); tickHandle = null; onTimeout(); }
-      };
-      tick();
-      tickHandle = setInterval(tick, TICK_MS);
-    }
-
-    function onTimeout(){
-      if(revealing) return; revealing = true;
-      lives = Math.max(0, lives-1);
-      renderLives();
-      // Reveal correct word in answer row
-      for(let i=0;i<5;i++){
-        current[i] = answerWord[i];
-        locked[i] = false; // ignore locks on reveal
-      }
-      rerenderAnswer();
-      liveEvents.textContent = `Time's up — the word was ${answerWord}`;
-      // Shudder animation
-      answerRow.classList.add('shudder');
-      // Disable inputs during reveal; after shudder, proceed
-      setTimeout(()=>{
-        answerRow.classList.remove('shudder');
-        revealing = false;
-        if(lives > 0){ nextLevel(); } else { gameOver(); }
-      }, 900);
-    }
-
-    // ===== Game Over =====
-    function gameOver(){
-      if(tickHandle) { clearInterval(tickHandle); tickHandle = null; }
-      const elapsed = Date.now() - runStart;
-      const levelsCompleted = Math.max(0, level - 1);
-      gameOverSub.textContent = `Run time: ${fmtMMSS(elapsed)} — Levels completed: ${levelsCompleted}`;
-      showModal(gameOverModal);
-    }
-
-    // ===== Keyboard (desktop) =====
-    function handleKey(e){
-      if(revealing) return;
-      // Ignore if any input element is focused
-      const tag = (document.activeElement && document.activeElement.tagName) || '';
-      if(tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable) return;
-
-      if(e.code === 'Space'){
-        e.preventDefault(); onShuffle(); return;
-      }
-      if(e.key === 'Backspace' || e.key === 'Delete'){
-        e.preventDefault(); onClearAll(); return;
-      }
-      const k = e.key.toUpperCase();
-      if(k.length === 1 && k >= 'A' && k <= 'Z'){
-        e.preventDefault();
-        // Place leftmost unused matching bank letter
-        let bi = -1;
-        for(let i=0;i<5;i++){
-          if(!bank[i].used && bank[i].ch === k){ bi = i; break; }
-        }
-        if(bi !== -1) onLetterTap(bi);
-      }
-    }
-
-    // ===== Modals =====
-    function hideAllModals(){
-      [introModal, gameOverModal, fetchError].forEach(m=>m.classList.remove('show'));
-    }
-    function showModal(el){ el.classList.add('show'); app.classList.add('inert'); el.querySelector('.btn')?.focus(); }
-    function showIntro(){ showModal(introModal); }
-
-    // ===== Bindings =====
-    shuffleBtn.addEventListener('click', ()=>{ pressFx(shuffleBtn); onShuffle(); });
-    clearBtn.addEventListener('click', ()=>{ pressFx(clearBtn); onClearAll(); });
-    playBtn.addEventListener('click', ()=>{ pressFx(playBtn); startGame(); });
-    retryBtn.addEventListener('click', ()=>{ pressFx(retryBtn); startGame(); });
-
-    themeToggle.addEventListener('click', ()=>{
-      pressFx(themeToggle);
-      const now = document.documentElement.getAttribute('data-theme') || 'light';
-      setThemeExplicit(now === 'dark' ? 'light' : 'dark');
+  function renderAnswerRow(){
+    answerRow.innerHTML = '';
+    state.current.forEach((ch, i)=>{
+      const div = document.createElement('div');
+      div.className = 'tile' + (state.locked[i] ? ' locked' : ch ? '' : ' empty');
+      div.textContent = ch || '•';
+      div.dataset.slot = i;
+      answerRow.appendChild(div);
     });
+  }
 
-    window.addEventListener('keydown', handleKey);
+  function renderBankRow(){
+    bankRow.innerHTML='';
+    state.bank.forEach((b,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'bank-btn';
+      btn.type = 'button';
+      btn.textContent = b.ch;
+      btn.disabled = b.used || state.inputsDisabled;
+      btn.dataset.idx = i;
+      btn.addEventListener('click', ()=> onLetterTap(i));
+      bankRow.appendChild(btn);
+    });
+  }
 
-    // Init theme and load data
-    initTheme();
-    loadWordLists();
-  })();
+  function renderTimer(nowMs){
+    const remainMs = clamp(state.deadlineAt - nowMs, 0, COUNTDOWN_SECONDS*1000);
+    const pct = (remainMs / (COUNTDOWN_SECONDS*1000)) * 100;
+    timerFill.style.width = pct + '%'; // left-anchored, drains right -> left
+    const remainSec = Math.ceil(remainMs/1000);
+    const pb = document.querySelector('.timer[role="progressbar"]');
+    pb.setAttribute('aria-valuenow', String(clamp(remainSec,0,COUNTDOWN_SECONDS)));
+    if(remainSec !== state.lastAnnouncedSec && remainSec >= 0){
+      state.lastAnnouncedSec = remainSec;
+      // announce at most ~1Hz
+      announce(`${remainSec} seconds remaining`);
+    }
+  }
+
+  function renderUI(){
+    renderLives();
+    renderLevel();
+    renderAnswerRow();
+    renderBankRow();
+  }
+
+  // ------------------------------
+  // 7) Timer controls
+  // ------------------------------
+  function startTimer(){
+    stopTimer();
+    state.lastAnnouncedSec = COUNTDOWN_SECONDS;
+    state.deadlineAt = performance.now() + COUNTDOWN_SECONDS*1000;
+    renderTimer(performance.now());
+    state.timerHandle = setInterval(()=>{
+      const now = performance.now();
+      renderTimer(now);
+      if(now >= state.deadlineAt){ stopTimer(); onTimeout(); }
+    }, TICK_MS);
+  }
+  function stopTimer(){ if(state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle=null; } }
+
+  // ------------------------------
+  // 8) Bank & Next word
+  // ------------------------------
+  function buildBankFrom(answer){
+    const letters = answer.split('');
+    shuffleArray(letters);
+    return letters.map(ch=>({ch, used:false}));
+  }
+
+  function nextWord(increment){
+    state.inputsDisabled = false;
+    if(increment) state.level++;
+    // pick random distinct answer
+    state.answerWord = state.ANSWER_POOL[randInt(state.ANSWER_POOL.length)];
+    state.bank = buildBankFrom(state.answerWord);
+    state.current = Array(5).fill('');
+    state.locked = Array(5).fill(false);
+    state.placedIndex = Array(5).fill(null);
+    renderUI();
+    startTimer();
+  }
+
+  function startRun(){
+    state.lives = STARTING_LIVES;
+    state.level = 1;
+    state.runStartAt = Date.now();
+    nextWord(false);
+  }
+
+  // ------------------------------
+  // 9) Input handlers
+  // ------------------------------
+  function firstUnlockedSlot(){
+    for(let i=0;i<5;i++) if(!state.locked[i] && !state.current[i]) return i;
+    return -1;
+  }
+
+  function onLetterTap(bankIndex){
+    if(state.inputsDisabled) return;
+    const entry = state.bank[bankIndex];
+    if(!entry || entry.used) return;
+    const slot = firstUnlockedSlot();
+    if(slot === -1) return;
+    state.current[slot] = entry.ch;
+    state.placedIndex[slot] = bankIndex;
+    entry.used = true;
+    // pop animation on that tile
+    const node = answerRow.children[slot];
+    node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop');
+    // auto-submit if full
+    autoSubmitIfFull();
+    renderBankRow();
+  }
+
+  function onShuffle(){
+    // Shuffle only unused letters, preserving used positions
+    const unusedIndices = state.bank.map((b,i)=> b.used ? null : i).filter(i=>i!==null);
+    const unusedLetters = unusedIndices.map(i=> state.bank[i].ch);
+    shuffleArray(unusedLetters);
+    unusedIndices.forEach((idx,k)=>{ state.bank[idx].ch = unusedLetters[k]; });
+    // jiggle bank
+    bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
+    renderBankRow();
+  }
+
+  function onClearAll(){
+    for(let i=0;i<5;i++){
+      if(state.locked[i]) continue;
+      const bi = state.placedIndex[i];
+      if(bi !== null){ state.bank[bi].used = false; }
+      state.current[i] = '';
+      state.placedIndex[i] = null;
+    }
+    renderUI();
+  }
+
+  function autoSubmitIfFull(){
+    if(state.current.every(ch=>!!ch)){
+      evaluateGuess(state.current.join(''));
+    }
+  }
+
+  function evaluateGuess(guess){
+    if(state.isAnimating) return;
+    if(guess === state.answerWord){
+      // Correct
+      stopTimer();
+      celebrateCorrect();
+    } else if(state.ACCEPTED_SET.has(guess)){
+      // Valid but wrong -> life -1, lock correct positions, clear the rest
+      state.lives = Math.max(0, state.lives - 1);
+      for(let i=0;i<5;i++){
+        if(guess[i] === state.answerWord[i]){
+          state.locked[i] = true; // keep placedIndex[i] to keep bank index consumed
+        }else{
+          // free bank for those slots
+          const bi = state.placedIndex[i];
+          if(bi !== null) state.bank[bi].used = false;
+          state.current[i] = '';
+          state.placedIndex[i] = null;
+        }
+      }
+      renderUI();
+      if(state.lives === 0){ gameOver(); }
+    } else {
+      // Invalid -> shake + clear non-locked (no life loss)
+      answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
+      for(let i=0;i<5;i++){
+        if(state.locked[i]) continue;
+        const bi = state.placedIndex[i];
+        if(bi !== null) state.bank[bi].used = false;
+        state.current[i] = '';
+        state.placedIndex[i] = null;
+      }
+      renderUI();
+    }
+  }
+
+  function celebrateCorrect(){
+    // pop celebration with light stagger
+    state.isAnimating = true; state.inputsDisabled = true;
+    const tiles = [...answerRow.children];
+    tiles.forEach((t, i)=> setTimeout(()=>{ t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); }, i*60));
+    setTimeout(()=>{ state.isAnimating=false; state.inputsDisabled=false; nextWord(true); }, 600);
+  }
+
+  function onTimeout(){
+    state.lives = Math.max(0, state.lives - 1);
+    // Reveal word and shudder (motion only)
+    state.inputsDisabled = true;
+    for(let i=0;i<5;i++){
+      state.current[i] = state.answerWord[i];
+      // keep locked flags as-is; they will be reset in nextWord
+    }
+    renderUI();
+    answerRow.classList.remove('shudder'); void answerRow.offsetWidth; answerRow.classList.add('shudder');
+    announce(`Time's up — the word was ${state.answerWord}.`);
+    setTimeout(()=>{
+      if(state.lives > 0){ nextWord(true); }
+      else { gameOver(); }
+      state.inputsDisabled = false;
+    }, 800);
+  }
+
+  function gameOver(){
+    stopTimer();
+    const levelsCompleted = Math.max(0, state.level - 1);
+    const secs = Math.round((Date.now() - state.runStartAt)/1000);
+    const mm = String(Math.floor(secs/60)).padStart(2,'0');
+    const ss = String(secs%60).padStart(2,'0');
+    goBody.textContent = `You reached level ${levelsCompleted}. ${(secs>0)?`Run time ${mm}:${ss}.`:''}`;
+    setBackdrop(gameoverBackdrop, true);
+  }
+
+  // ------------------------------
+  // 10) Keyboard (desktop)
+  // ------------------------------
+  function handleKey(e){
+    // Disable during modals or reveal
+    if(loadingBackdrop.classList.contains('show') || introBackdrop.classList.contains('show') || gameoverBackdrop.classList.contains('show') || state.inputsDisabled){ return; }
+    const k = e.key;
+    if(k === ' '){ e.preventDefault(); onShuffle(); return; }
+    if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClearAll(); return; }
+    const m = k.toUpperCase();
+    if(m.length === 1 && m >= 'A' && m <= 'Z'){
+      // place leftmost matching unused bank entry
+      for(let i=0;i<state.bank.length;i++){
+        const b = state.bank[i];
+        if(!b.used && b.ch === m){ onLetterTap(i); break; }
+      }
+    }
+  }
+  window.addEventListener('keydown', handleKey);
+
+  // ------------------------------
+  // 11) Wire controls
+  // ------------------------------
+  btnShuffle.addEventListener('click', onShuffle);
+  btnClear.addEventListener('click', onClearAll);
+  btnPlay.addEventListener('click', ()=>{ setBackdrop(introBackdrop,false); startRun(); });
+  btnAgain.addEventListener('click', ()=>{ setBackdrop(gameoverBackdrop,false); startRun(); });
+
+  // ------------------------------
+  // 12) Boot
+  // ------------------------------
+  initTheme();
+  renderUI();
+  loadWordLists();
   </script>
 </body>
 </html>
