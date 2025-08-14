@@ -150,8 +150,22 @@ button{ touch-action: manipulation; }
       <div class="title" aria-label="Game title">JUMBL</div>
       <div class="theme-wrap">
         <button class="icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
-          <svg class="icon" id="iconSun" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4.5a1 1 0 0 1 1 1V7a1 1 0 1 1-2 0V5.5a1 1 0 0 1 1-1Zm0 11a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm7.5-3.5a1 1 0 0 1 1 1V14a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1ZM12 17a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V18a1 1 0 0 1 1-1ZM4.5 12a1 1 0 0 1 1-1H7a1 1 0 1 1 0 2H5.5a1 1 0 0 1-1-1Zm10.95-5.657a1 1 0 0 1 1.414 0l1.06 1.06a1 1 0 1 1-1.413 1.415l-1.061-1.06a1 1 0 0 1 0-1.415Zm0 11.314a1 1 0 0 1 1.414 0l1.06 1.06a1 1 0 1 1-1.413 1.415l-1.061-1.06a1 1 0 0 1 0-1.415ZM6.076 6.904a1 1 0 0 1 1.415 0L8.55 7.964A1 1 0 1 1 7.136 9.38L6.076 8.318a1 1 0 0 1 0-1.414Zm0 10.192a1 1 0 0 1 1.415 0l1.06 1.06A1 1 0 0 1 7.136 19.57l-1.06-1.06a1 1 0 0 1 0-1.414Z"/></svg>
-          <svg class="icon" id="iconMoon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+          <!-- replace your current #iconSun SVG with this -->
+<svg class="icon" id="iconSun" fill="currentColor" aria-hidden="true" focusable="false" role="img">
+  <!-- core -->
+  <circle cx="12" cy="12" r="4"/>
+  <!-- N / S / W / E rays -->
+  <rect x="11" y="2"  width="2" height="3" rx="1"/>
+  <rect x="11" y="19" width="2" height="3" rx="1"/>
+  <rect x="2"  y="11" width="3" height="2" rx="1"/>
+  <rect x="19" y="11" width="3" height="2" rx="1"/>
+  <!-- diagonal rays -->
+  <rect x="4.05"  y="4.05"  width="2" height="2" rx="1" transform="rotate(45 5.05 5.05)"/>
+  <rect x="17.95" y="4.05"  width="2" height="2" rx="1" transform="rotate(45 18.95 5.05)"/>
+  <rect x="4.05"  y="17.95" width="2" height="2" rx="1" transform="rotate(45 5.05 18.95)"/>
+  <rect x="17.95" y="17.95" width="2" height="2" rx="1" transform="rotate(45 18.95 18.95)"/>
+</svg>
+          <svg class="icon" id="iconMoon" fill="currentColor" aria-hidden="true" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
         </button>
       </div>
     </header>
