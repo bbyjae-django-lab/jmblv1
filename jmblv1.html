@@ -554,12 +554,17 @@
     }
 
     function onClearAll(opts = { animate: true, force: false }){
+  // If a PointerEvent accidentally arrives, fall back to defaults
+  if (opts && typeof opts === 'object' && ('type' in opts) && ('pointerId' in opts)) {
+    opts = { animate: true, force: false };
+  }
+
   // allow clearing during animations only when explicitly forced
   if (!opts.force && (state.isAnimating || state.modalOpen)) return;
 
-  for(let i=0;i<5;i++){
+  for (let i = 0; i < 5; i++) {
     const bi = state.placedIndex[i];
-    if(bi !== null){ state.bank[bi].used = false; }
+    if (bi !== null) { state.bank[bi].used = false; }
     state.current[i] = "";
     state.placedIndex[i] = null;
   }
@@ -633,13 +638,15 @@
 
       // Buttons: stay "pressed" while held; pop back on pointerup, then run action
       function makeTap(btn, handler){
-        btn.addEventListener('pointerdown', ()=> btn.classList.add('press'));
-        btn.addEventListener('pointerup',   (e)=>{ btn.classList.remove('press'); handler(e); });
-        btn.addEventListener('pointercancel', ()=> btn.classList.remove('press'));
-        btn.addEventListener('pointerleave',  ()=> btn.classList.remove('press'));
+        btn.addEventListener('pointerdown', () => btn.classList.add('press'));
+        btn.addEventListener('pointerup',   () => { btn.classList.remove('press'); handler(); });
+        btn.addEventListener('pointercancel', () => btn.classList.remove('press'));
+        btn.addEventListener('pointerleave',  () => btn.classList.remove('press'));
       }
+
       makeTap(shuffleBtn, onShuffle);
-      makeTap(clearBtn,   onClearAll);
+      // Explicit opts so we always animate the bar on Clear
+      makeTap(clearBtn,   () => onClearAll({ animate: true }));
 
     document.addEventListener('keydown', (e)=>{
       if(state.modalOpen || state.isAnimating) return;
