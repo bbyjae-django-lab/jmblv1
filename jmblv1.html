@@ -1,597 +1,848 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>JUMBL</title>
-  <script>
-    // --- Theme boot (runs before paint) ---
-    (function(){
-      try {
-        const key = 'jumbl-theme';
-        const stored = localStorage.getItem(key);
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const wantDark = stored ? stored === 'dark' : prefersDark;
-        document.documentElement.classList.toggle('dark', wantDark);
-      } catch (e) {}
-    })();
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <style>
-    :root{
+    /* =========================
+       0) Base / Theme / Resets
+       ========================= */
+    :root {
       color-scheme: light dark;
-      --bg:#F6F7FB; --fg:#0F1220; --muted:#6B7280; --track:#ECECEC;
-      --tile-bg:#FFFFFF; --tile-fg:#111827; --btn-bg:#FFFFFF; --btn-fg:#0F1220;
-      --accent:#3B82F6; --danger:#EF4444; --shadow:0 6px 20px rgba(0,0,0,.08); --radius:16px;
-      --gap:10px; --tile-min:56px; --timer-h:14px; --card-radius:16px;
-      --press-scale:.96; --press-ms:110ms;
-      --anim-fast:200ms; --anim-med:500ms; --anim-shake:220ms; --anim-jiggle:260ms; --anim-shudder:800ms;
-    }
-    html.dark{
-      --bg:#0F1115; --fg:#E6E7EB; --muted:#9AA1AA; --track:#1F2430;
-      --tile-bg:#171A20; --tile-fg:#F7F7FA; --btn-bg:#171A20; --btn-fg:#E6E7EB;
-      --accent:#7CB2FF; --danger:#FF6B88; --shadow:0 8px 24px rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--fg);
-      height:100dvh; min-height:100dvh; overflow:hidden; overscroll-behavior:none;
-      -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
-      font: 16px/1.2 system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Arial,sans-serif;
-    }
-    .app{ width:min(100vw,600px); margin:0 auto; height:100%;
-      padding-top:calc(env(safe-area-inset-top) + 16px);
-      padding-bottom:calc(env(safe-area-inset-bottom) + 18px);
-      display:grid; grid-template-rows:auto auto auto auto auto auto auto 1fr;
-      gap:14px; align-items:start; }
+      --vh: 100vh;
+      --vw: 100vw;
 
-    /* Header */
-    .header{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:0 16px; }
-    .title{ text-align:center; font-weight:700; letter-spacing:0.12em; }
-    .theme-wrap{ display:flex; justify-content:flex-end; }
-    .icon-btn{ appearance:none; border:0; background:var(--btn-bg); color:var(--btn-fg);
-      width:40px; height:40px; border-radius:12px; box-shadow:var(--shadow);
-      display:grid; place-items:center; cursor:pointer; transition:transform var(--press-ms) ease, box-shadow var(--press-ms) ease; }
-    .icon-btn:active{ transform:scale(var(--press-scale)); }
-    .icon{ width:22px; height:22px; display:block; }
-    .icon.sun{ display: inline-block; }
-    .icon.moon{ display: none; }
-    html.dark .icon.sun{ display: none; }
-    html.dark .icon.moon{ display: inline-block; }
+      /* Light (flat) */
+      --bg:#FFFFFF; --fg:#000000; --muted:rgba(0,0,0,.60);
+      --track:rgba(0,0,0,.12); --tile-bg:#FFFFFF; --tile-fg:#000000;
+      --btn-bg:#FFFFFF; --btn-fg:#000000; --border:rgba(0,0,0,.15);
+      --shadow:none; --radius:12px;
 
-    /* Lives */
-    .lives{ display:flex; justify-content:center; gap:10px; }
-    .pip{ width:12px; height:12px; border-radius:999px; background:var(--fg); opacity:.28; box-shadow:var(--shadow); }
-    .pip.on{ opacity:1; }
+      --gap:10px;
+      --touch:56px;
+      --timer-h:14px;
+      --btn-pad:12px 16px;
 
-    /* Level */
-    .level{ text-align:center; color:var(--muted); font-weight:600; }
-
-    /* Timer */
-    .timer-card{ padding:12px 16px; }
-    .timer{ position:relative; width:100%; height:var(--timer-h); background:var(--track); border-radius:9999px; overflow:hidden; }
-    .timer .fill{ position:absolute; left:0; top:0; bottom:0; width:100%; background:var(--fg); border-radius:9999px; transition: width 100ms linear; transform:translateZ(0); }
-
-    /* Rows */
-    .row{ padding:0 16px; }
-    .grid5{ display:grid; grid-template-columns:repeat(5, 1fr); gap:var(--gap); }
-    .tile, .bank-btn{ aspect-ratio:1/1; min-width:var(--tile-min); min-height:var(--tile-min);
-      border-radius:14px; background:var(--tile-bg); color:var(--tile-fg);
-      display:grid; place-items:center; font-weight:800; font-size:clamp(20px, 5.8vw, 28px);
-      box-shadow:var(--shadow); user-select:none; }
-    .tile{ pointer-events:none; }
-    .bank-btn{ cursor:pointer; border:0; transition: transform var(--press-ms) ease, box-shadow var(--press-ms) ease; }
-    .bank-btn:disabled{ opacity:.38; cursor:default; }
-    .bank-btn:active{ transform:scale(var(--press-scale)); }
-
-    /* Controls */
-    .controls{ display:flex; justify-content:center; gap:14px; padding:0 16px; }
-    .btn{ appearance:none; border:0; padding:12px 16px; border-radius:14px; background:var(--btn-bg); color:var(--btn-fg); box-shadow:var(--shadow);
-      font-weight:700; cursor:pointer; transition: transform var(--press-ms) ease, box-shadow var(--press-ms) ease; }
-    .btn:active{ transform:scale(var(--press-scale)); }
-
-    /* Animations */
-    @keyframes pop { 0%{transform:scale(.94)} 100%{transform:scale(1)} }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-    @keyframes jiggle { 0%,100%{transform:translateX(0) rotate(0)} 25%{transform:rotate(-2deg)} 75%{transform:rotate(2deg)} }
-    @keyframes shudder { 0%,100%{transform:translateX(0)} 10%{transform:translateX(-2px)} 20%{transform:translateX(2px)} 30%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 50%{transform:translateX(-1px)} 60%{transform:translateX(1px)} 70%{transform:translateX(-1px)} 80%{transform:translateX(1px)} 90%{transform:translateX(-.5px)} }
-    .pop{ animation: pop var(--anim-fast) ease; }
-    .shake{ animation: shake var(--anim-shake) ease; }
-    .jiggle{ animation: jiggle var(--anim-jiggle) ease; }
-    .shudder{ animation: shudder var(--anim-shudder) ease; }
-
-    @media (prefers-reduced-motion: reduce){
-      .pop,.shake,.jiggle,.shudder{ animation-duration: 1ms !important; }
-      .btn,.bank-btn{ transition:none; }
-      .timer .fill{ transition:none; }
+      /* Animation durations (auto-compress for reduced motion in JS) */
+      --dur-pop:200ms;
+      --dur-shake:220ms;
+      --dur-jiggle:260ms;
+      --dur-shudder:900ms;
+      --dur-press:100ms;
     }
 
-    /* Modals */
-    .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:50; }
-    .modal-backdrop.open{ display:block; }
-    .modal{ position:fixed; inset:0; display:grid; place-items:center; z-index:60; pointer-events:none; }
-    .modal > .card{ width:min(92vw, 520px); background:var(--tile-bg); color:var(--tile-fg); border-radius:24px; box-shadow:var(--shadow); padding:22px; pointer-events:auto; }
-    .modal h2{ margin:0 0 10px; letter-spacing:.06em; }
-    .modal p{ margin:8px 0; color:var(--muted); }
-    .modal .actions{ margin-top:14px; display:flex; gap:10px; justify-content:flex-end; }
+    html.dark {
+      /* Dark (flat) */
+      --bg:#000000; --fg:#FFFFFF; --muted:rgba(255,255,255,.70);
+      --track:rgba(255,255,255,.15); --tile-bg:#000000; --tile-fg:#FFFFFF;
+      --btn-bg:#000000; --btn-fg:#FFFFFF; --border:rgba(255,255,255,.20);
+      --shadow:none; --radius:12px;
+    }
 
-    /* A11y */
-    .sr-only{ position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px,1px,1px,1px); white-space:nowrap; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent; /* retain focus outlines */
+    }
+
+    /* App wrapper – clamp to visual viewport and max 600px width */
+    .app-shell {
+      height: 100dvh;
+      min-height: 100dvh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      padding-top: calc(env(safe-area-inset-top) + 16px);
+      padding-bottom: calc(env(safe-area-inset-bottom) + 18px);
+      display: grid;
+      place-items: start center;
+    }
+
+    .app {
+      width: min(var(--vw, 100vw), 600px);
+      padding: 12px 16px 24px;
+      display: grid;
+      grid-auto-rows: min-content;
+      row-gap: 16px;
+    }
+
+    /* 1) Header (3-col grid) */
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+    }
+    .header .spacer { justify-self: start; }
+    .header h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+    .theme-toggle {
+      justify-self: end;
+      display: inline-grid;
+      place-items: center;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px;
+      line-height: 0;
+      cursor: pointer;
+      transition: transform var(--dur-press);
+    }
+    .theme-toggle:active { transform: scale(0.96); }
+    .theme-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+    /* 2) Lives row */
+    .lives {
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: center;
+      gap: 8px;
+    }
+    .life {
+      width: 24px; height: 24px; border-radius: 8px;
+      background: var(--tile-bg);
+      border: 1px solid var(--border);
+    }
+    .life.off { opacity: .3; }
+
+    /* 3) Score label */
+    .score { text-align: center; font-size: 14px; color: var(--muted); }
+
+    /* 4) Timer card – drains right → left */
+    .timer {
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      background: var(--track);
+      height: var(--timer-h);
+      position: relative;
+      overflow: hidden;
+    }
+    .timer-fill {
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 100%;
+      background: var(--fg);
+      transition: width 100ms linear;
+    }
+
+    /* 5) Rows: Answer (top) & Bank (below) */
+    .grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--gap);
+    }
+    .tile, .bank-btn {
+      aspect-ratio: 1 / 1;
+      min-width: var(--touch);
+      min-height: var(--touch);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      background: var(--tile-bg);
+      color: var(--tile-fg);
+      user-select: none;
+    }
+    .tile {
+      font-weight: 600;
+      font-size: 22px;
+    }
+    .tile.empty { opacity: .6; }
+    .bank {
+      margin-top: 2px;
+    }
+    .bank-btn {
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      font-weight: 700;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform var(--dur-press);
+    }
+    .bank-btn:disabled { opacity: .35; cursor: default; }
+    .bank-btn:active { transform: scale(0.96); }
+    .bank-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+    /* 6) Controls */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap);
+      margin-top: 2px;
+    }
+    .btn {
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--btn-pad);
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform var(--dur-press);
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: .35; cursor: default; }
+    .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+    .spacer { height: 8px; }
+
+    /* 7) Animations (motion-only) */
+    @keyframes pop { from { transform: scale(0.95); } to { transform: scale(1); } }
+    .pop { animation: pop var(--dur-pop) ease-out; }
+
+    @keyframes shake { 0%,100%{transform: translateX(0)} 25%{transform: translateX(-6px)} 75%{transform: translateX(6px)} }
+    .shake { animation: shake var(--dur-shake) ease-in-out; }
+
+    @keyframes jiggle { 0%,100%{transform: rotate(0)} 25%{transform: rotate(-2.5deg)} 75%{transform: rotate(2.5deg)} }
+    .jiggle { animation: jiggle var(--dur-jiggle) ease-in-out; }
+
+    @keyframes shudder { 0%,100%{transform: translateY(0)} 20%{transform: translateY(-2px)} 40%{transform: translateY(2px)} 60%{transform: translateY(-2px)} 80%{transform: translateY(2px)} }
+    .shudder { animation: shudder var(--dur-shudder) ease-in-out; }
+
+    /* 8) Modals (Loading/Retry, Intro/Rules, Game Over) */
+    .overlay {
+      position: fixed; inset: 0;
+      background: color-mix(in oklab, var(--bg), transparent 30%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .overlay.show { display: flex; }
+    .dialog {
+      width: min(480px, 92vw);
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 18px 16px;
+      display: grid; gap: 12px;
+    }
+    .dialog h2 { margin: 0; font-size: 18px; letter-spacing: .06em; }
+    .dialog p { margin: 0; color: var(--muted); font-size: 14px; }
+    .dialog .actions { display: grid; grid-auto-flow: column; gap: 10px; justify-content: end; margin-top: 6px; }
+    .sr-only {
+      position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    /* Visually dim/disable background when modal shown */
+    .blocked { pointer-events: none; user-select: none; }
   </style>
 </head>
 <body>
-  <div class="app" id="app" aria-live="off">
-    <!-- Header -->
-    <header class="header" aria-label="Header">
-      <div></div>
-      <div class="title" aria-label="Game title">JUMBL</div>
-      <div class="theme-wrap">
-        <button class="icon-btn" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
-          <!-- Sun: symmetrical circle with 8 rays -->
-          <svg class="icon sun" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="4.5" fill="currentColor"></circle>
-            <g fill="currentColor">
-              <rect x="11.25" y="1.5" width="1.5" height="4"></rect>
-              <rect x="11.25" y="18.5" width="1.5" height="4"></rect>
-              <rect x="1.5" y="11.25" width="4" height="1.5"></rect>
-              <rect x="18.5" y="11.25" width="4" height="1.5"></rect>
-              <rect x="3.636" y="3.636" width="1.5" height="4" transform="rotate(-45 4.386 5.636)"></rect>
-              <rect x="18.864" y="16.364" width="1.5" height="4" transform="rotate(-45 19.614 18.364)"></rect>
-              <rect x="3.636" y="16.364" width="1.5" height="4" transform="rotate(45 4.386 18.364)"></rect>
-              <rect x="18.864" y="3.636" width="1.5" height="4" transform="rotate(45 19.614 5.636)"></rect>
-            </g>
-          </svg>
-          <!-- Moon: simple crescent -->
-          <svg class="icon moon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="currentColor" d="M21 13.5A9 9 0 0 1 10.5 3c.4 0 .8.03 1.17.09A7.5 7.5 0 1 0 21 13.5Z"/>
-          </svg>
+  <div class="app-shell">
+    <main class="app" id="app" aria-live="polite">
+      <!-- Header -->
+      <div class="header" aria-label="Header">
+        <div class="spacer"></div>
+        <h1>JUMBL</h1>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+          <!-- Inline SVG sun/moon; swapped by JS -->
+          <svg id="iconSun" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a1 1 0 0 0 1-1V2a1 1 0 1 0-2 0v1.5a1 1 0 0 0 1 1Zm0 17a1 1 0 0 0-1 1V24a1 1 0 1 0 2 0v-1.5a1 1 0 0 0-1-1ZM4.5 12a1 1 0 0 0-1-1H2a1 1 0 1 0 0 2h1.5a1 1 0 0 0 1-1Zm18 0a1 1 0 0 0 1-1V10a1 1 0 1 0-2 0v1a1 1 0 0 0 1 1ZM5.76 6.17a1 1 0 0 0 1.41 0l1.06-1.06a1 1 0 1 0-1.41-1.41L5.76 4.76a1 1 0 0 0 0 1.41Zm11.31 11.31a1 1 0 0 0-1.41 0l-1.06 1.06a1 1 0 1 0 1.41 1.41l1.06-1.06a1 1 0 0 0 0-1.41ZM6.17 18.24a1 1 0 0 0 0-1.41L5.11 15.76a1 1 0 1 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41 0Zm11.31-11.31a1 1 0 0 0 0 1.41l1.06 1.06a1 1 0 1 0 1.41-1.41L18.89 6.17a1 1 0 0 0-1.41 0ZM12 7.25A4.75 4.75 0 1 0 16.75 12 4.76 4.76 0 0 0 12 7.25Z"/></svg>
+          <svg id="iconMoon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="display:none;"><path d="M21.64 13a9 9 0 1 1-10.63-10.6 1 1 0 0 1 1.06.27A7 7 0 0 0 22 12a7.09 7.09 0 0 0-.26 1 1 1 0 0 1-.1.39Z"/></svg>
         </button>
       </div>
-    </header>
 
-    <!-- Lives -->
-    <div class="lives" aria-label="Lives">
-      <span id="pip1" class="pip on"></span>
-      <span id="pip2" class="pip on"></span>
-      <span id="pip3" class="pip on"></span>
-      <span class="sr-only" id="livesText">Lives: 3 of 3</span>
-    </div>
+      <!-- Lives -->
+      <div class="lives" id="lives" aria-label="Lives"></div>
 
-    <!-- Level -->
-    <div class="level" id="levelLabel" aria-label="Level">Level 1</div>
+      <!-- Score -->
+      <div class="score" id="score" aria-label="Score">Score: 0</div>
 
-    <!-- Timer -->
-    <div class="timer-card row">
-      <div class="timer" role="progressbar" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25" aria-label="Time remaining">
-        <div class="fill" id="timerFill"></div>
+      <!-- Timer -->
+      <div class="timer" id="timer"
+           role="progressbar"
+           aria-label="Time remaining (seconds)"
+           aria-valuemin="0" aria-valuemax="25" aria-valuenow="25">
+        <div class="timer-fill" id="timerFill" style="width:100%;"></div>
       </div>
-    </div>
 
-    <!-- Answer row (top) -->
-    <div class="row" aria-label="Your guess">
-      <div class="grid5" id="answerRow">
-        <div class="tile" data-slot="0"></div>
-        <div class="tile" data-slot="1"></div>
-        <div class="tile" data-slot="2"></div>
-        <div class="tile" data-slot="3"></div>
-        <div class="tile" data-slot="4"></div>
+      <!-- Answer row -->
+      <div class="grid-5" id="answerRow" aria-label="Your guess"></div>
+
+      <!-- Letter bank -->
+      <div class="grid-5 bank" id="bank" aria-label="Letter bank"></div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button class="btn" id="btnShuffle" type="button">Shuffle</button>
+        <button class="btn" id="btnClear" type="button">Clear</button>
       </div>
-    </div>
 
-    <!-- Letter bank (below answer row) -->
-    <div class="row" aria-label="Letter bank">
-      <div class="grid5" id="bankRow">
-        <!-- buttons injected -->
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls" aria-label="Controls">
-      <button class="btn" id="shuffleBtn" type="button" aria-label="Shuffle letters">⤮ Shuffle</button>
-      <button class="btn" id="clearBtn" type="button" aria-label="Clear all">⌫ Clear All</button>
-    </div>
-
-    <div></div><!-- spacer -->
+      <div class="spacer" aria-hidden="true"></div>
+    </main>
   </div>
 
-  <!-- Modals -->
-  <div id="backdrop" class="modal-backdrop"></div>
+  <!-- Hidden live region for countdown + status messages -->
+  <div id="live" class="sr-only" aria-live="polite"></div>
 
-  <div id="loadingModal" class="modal" aria-hidden="true">
-    <div class="card" role="dialog" aria-modal="true" aria-labelledby="loadingTitle">
-      <h2 id="loadingTitle">Loading word lists…</h2>
-      <p id="loadingBody">Fetching…</p>
-      <div class="actions">
-        <button id="retryBtn" class="btn" type="button" disabled>Retry</button>
+  <!-- Modal overlay -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <div class="dialog" id="dialog" tabindex="-1">
+      <h2 id="dialogTitle">Loading…</h2>
+      <p id="dialogBody">Fetching…</p>
+      <div class="actions" id="dialogActions">
+        <!-- Buttons injected per modal state -->
       </div>
     </div>
   </div>
-
-  <div id="introModal" class="modal" aria-hidden="true">
-    <div class="card" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
-      <h2 id="rulesTitle">RULES</h2>
-      <p>Use the jumbled letters to make a real 5-letter word.</p>
-      <p>Beat the clock to <strong>level up</strong> and refill the timer.</p>
-      <p>If you enter a real word that isn’t the answer, you get <strong>+5 seconds</strong> (capped at 25s total).</p>
-      <p>If the timer hits zero, we <strong>reveal the word</strong> and you <strong>lose a life</strong>. If you still have lives left, you’ll get a <strong>new word at the same level</strong> and the timer <strong>resets</strong>.</p>
-      <p><strong>25 seconds per word • 3 lives</strong></p>
-      <p><strong>Tip:</strong> ⤮ Shuffle • ⌫ Clear All</p>
-      <div class="actions"><button id="playBtn" class="btn" type="button">Play</button></div>
-    </div>
-  </div>
-
-  <div id="gameOverModal" class="modal" aria-hidden="true">
-    <div class="card" role="dialog" aria-modal="true" aria-labelledby="overTitle">
-      <h2 id="overTitle">Game Over</h2>
-      <p id="overBody">You reached Level 0.</p>
-      <div class="actions"><button id="againBtn" class="btn" type="button">Try again</button></div>
-    </div>
-  </div>
-
-  <div id="ariaTimer" class="sr-only" aria-live="polite"></div>
 
   <script>
-  (function(){
-    'use strict';
+  (() => {
+    "use strict";
 
-    // ===== Constants =====
+    /* =========================
+       1) Constants / State
+       ========================= */
     const COUNTDOWN_SECONDS = 25;
     const STARTING_LIVES = 3;
-    const TIME_BOOST_SECONDS = 5;
-    const MAX_TIME_SECONDS = 25; // cap
     const TICK_MS = 100;
 
-    // ===== State =====
     let ANSWER_POOL = [];
     let GUESSES_SET = new Set();
 
-    const state = {
-      answerWord: '',
-      bank: [],          // [{ch, used}]
-      current: ['', '', '', '', ''],
-      placedIndex: [null, null, null, null, null],
-      lives: STARTING_LIVES,
-      level: 1,
-      runStartAt: 0,
-      deadlineAt: 0,
-      timerHandle: null,
-      isAnimating: false,
-      lastAnnounceSec: null,
-      modalOpen: false,
-    };
+    /** Authoritative state */
+    let answerWord = "";
+    /** @type {{ch:string, used:boolean}[]} */
+    let bank = [];
+    /** @type {string[]} */
+    let current = ["","","","",""];
+    /** @type {(number|null)[]} */
+    let placedIndex = [null,null,null,null,null];
 
-    // ===== DOM =====
-    const q = sel => document.querySelector(sel);
-    const qa = sel => Array.from(document.querySelectorAll(sel));
-    const el = {
-      timerFill: q('#timerFill'),
-      timerBar: q('.timer'),
-      ariaTimer: q('#ariaTimer'),
-      levelLabel: q('#levelLabel'),
-      livesText: q('#livesText'),
-      pips: [q('#pip1'), q('#pip2'), q('#pip3')],
-      answerRow: q('#answerRow'),
-      bankRow: q('#bankRow'),
-      shuffleBtn: q('#shuffleBtn'),
-      clearBtn: q('#clearBtn'),
-      themeToggle: q('#themeToggle'),
-      backdrop: q('#backdrop'),
-      loadingModal: q('#loadingModal'),
-      retryBtn: q('#retryBtn'),
-      loadingBody: q('#loadingBody'),
-      introModal: q('#introModal'),
-      playBtn: q('#playBtn'),
-      overModal: q('#gameOverModal'),
-      overBody: q('#overBody'),
-      againBtn: q('#againBtn'),
-    };
+    let lives = STARTING_LIVES;
+    let score = 0;
+    let runStartAt = 0;
+    let deadlineAt = 0;
+    let tickHandle = null;
+    let lastAnnounceSec = null;
+    let isAnimating = false;
+    let anyModalOpen = false;
 
-    // ===== Utilities =====
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const randInt = n => Math.floor(Math.random()*n);
-    const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
-    const upper5 = s => (s||'').toUpperCase().trim();
-    const now = () => performance.now();
-
-    function setTheme(next){
-      const root = document.documentElement;
-      const dark = next === 'dark' ? true : next === 'light' ? false : !root.classList.contains('dark');
-      root.classList.toggle('dark', dark);
-      try{ localStorage.setItem('jumbl-theme', dark ? 'dark' : 'light'); }catch(e){}
+    /* Reduced motion handling */
+    const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+    if (prefersReduced) {
+      document.documentElement.style.setProperty("--dur-pop", "60ms");
+      document.documentElement.style.setProperty("--dur-shake", "60ms");
+      document.documentElement.style.setProperty("--dur-jiggle", "60ms");
+      document.documentElement.style.setProperty("--dur-shudder", "120ms");
     }
 
-    // ===== Rendering =====
-    function renderLives(){
-      for (let i=0;i<STARTING_LIVES;i++){
-        el.pips[i].classList.toggle('on', i < state.lives);
+    /* =========================
+       2) DOM Refs
+       ========================= */
+    const elApp = document.getElementById("app");
+    const elLives = document.getElementById("lives");
+    const elScore = document.getElementById("score");
+    const elTimer = document.getElementById("timer");
+    const elTimerFill = document.getElementById("timerFill");
+    const elAnswer = document.getElementById("answerRow");
+    const elBank = document.getElementById("bank");
+    const elShuffle = document.getElementById("btnShuffle");
+    const elClear = document.getElementById("btnClear");
+    const elLive = document.getElementById("live");
+    const overlay = document.getElementById("overlay");
+    const dialog = document.getElementById("dialog");
+    const dialogTitle = document.getElementById("dialogTitle");
+    const dialogBody = document.getElementById("dialogBody");
+    const dialogActions = document.getElementById("dialogActions");
+    const themeToggle = document.getElementById("themeToggle");
+    const iconSun = document.getElementById("iconSun");
+    const iconMoon = document.getElementById("iconMoon");
+
+    /* =========================
+       3) Theme (persist)
+       ========================= */
+    const THEME_KEY = "jumbl-theme";
+    function applyTheme(theme) {
+      const dark = theme === "dark";
+      document.documentElement.classList.toggle("dark", dark);
+      // swap icons
+      iconSun.style.display = dark ? "none" : "";
+      iconMoon.style.display = dark ? "" : "none";
+      try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    }
+    function initTheme() {
+      let theme = "light";
+      try {
+        const saved = localStorage.getItem(THEME_KEY);
+        if (saved === "light" || saved === "dark") theme = saved;
+        else {
+          const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          theme = prefersDark ? "dark" : "light";
+        }
+      } catch {}
+      applyTheme(theme);
+    }
+    themeToggle.addEventListener("click", () => {
+      const next = document.documentElement.classList.contains("dark") ? "light" : "dark";
+      applyTheme(next);
+    });
+    initTheme();
+
+    /* =========================
+       4) VisualViewport vars
+       ========================= */
+    function setViewportVars() {
+      const vv = window.visualViewport;
+      const w = vv?.width ?? window.innerWidth;
+      const h = vv?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--vw", w + "px");
+      document.documentElement.style.setProperty("--vh", h + "px");
+    }
+    setViewportVars();
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", setViewportVars);
+      vv.addEventListener("scroll", setViewportVars);
+    }
+    window.addEventListener("orientationchange", setViewportVars);
+    window.addEventListener("resize", setViewportVars);
+    window.addEventListener("pageshow", setViewportVars);
+
+    /* =========================
+       5) Modals (overlay)
+       ========================= */
+    function openModal(kind, opts={}) {
+      anyModalOpen = true;
+      overlay.classList.add("show");
+      elApp.classList.add("blocked");
+      dialogActions.innerHTML = "";
+      dialog.removeAttribute("inert");
+
+      if (kind === "loading") {
+        dialogTitle.textContent = "Loading word lists…";
+        dialogBody.textContent = opts.message ?? "Fetching…";
+        const btn = mkButton("Retry", () => { loadWordLists(); }, true);
+        btn.disabled = true; // enabled on error
+        btn.id = "btnRetry";
+        dialogActions.append(btn);
+      } else if (kind === "error") {
+        dialogTitle.textContent = "Loading word lists…";
+        dialogBody.textContent = opts.message ?? "Trouble loading word lists.";
+        const btn = mkButton("Retry", () => { loadWordLists(); }, true);
+        btn.id = "btnRetry";
+        dialogActions.append(btn);
+      } else if (kind === "intro") {
+        dialogTitle.textContent = "RULES";
+        dialogBody.innerHTML = `
+          <p>Un-JUMBL the letters to make a 5-letter word.</p>
+          <p>Beat the clock to increase your score and refill the timer.</p>
+          <p>If the timer hits zero, you lose a life.</p>
+          <p>25 seconds per word • 3 lives</p>
+          <p>Highest score wins.</p>
+        `;
+        const btn = mkButton("Play", () => { closeModal(); startRun(); }, true);
+        dialogActions.append(btn);
+      } else if (kind === "gameover") {
+        dialogTitle.textContent = "GAME OVER";
+        const elapsed = formatMMSS(Math.max(0, Math.floor((performance.now() - runStartAt)/1000)));
+        dialogBody.textContent = `${score} words in ${elapsed}`;
+        const btn = mkButton("Again", () => { closeModal(); startRun(); }, true);
+        dialogActions.append(btn);
       }
-      el.livesText.textContent = `Lives: ${state.lives} of ${STARTING_LIVES}`;
+      // Focus the first action
+      setTimeout(() => {
+        (dialogActions.querySelector("button") ?? dialog).focus();
+      }, 0);
     }
 
-    function renderLevel(){
-      el.levelLabel.textContent = `Level ${state.level}`; // exact copy
+    function closeModal() {
+      anyModalOpen = false;
+      overlay.classList.remove("show");
+      elApp.classList.remove("blocked");
+      dialog.setAttribute("inert",""); // lightweight guard
     }
 
-    function renderTimer(){
-      const remainMs = Math.max(0, state.deadlineAt - now());
-      const pct = clamp(remainMs / (COUNTDOWN_SECONDS*1000), 0, 1);
-      el.timerFill.style.width = (pct*100).toFixed(3) + '%'; // left-anchored; drains right->left
-      const secs = Math.ceil(remainMs/1000);
-      if (secs !== state.lastAnnounceSec){
-        // aria progressbar value
-        q('.timer').setAttribute('aria-valuenow', String(secs));
-        // announce at <=1Hz
-        el.ariaTimer.textContent = `${secs} seconds remaining`;
-        state.lastAnnounceSec = secs;
+    function mkButton(label, onClick, primary=false) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn";
+      b.textContent = label;
+      if (primary) b.style.fontWeight = "700";
+      b.addEventListener("click", onClick);
+      return b;
+    }
+
+    // Trap Esc & basic tab loop
+    overlay.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { closeModal(); }
+      if (e.key === "Tab") {
+        const focusables = overlay.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+        if (!focusables.length) return;
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+        else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
       }
+    });
+
+    /* =========================
+       6) Fetch + Parse Lists
+       ========================= */
+    function normalizeList(text) {
+      // strip BOM
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      const lines = text.split(/\r\n?|\n/).map(s => s.trim().toUpperCase());
+      const out = [];
+      const seen = new Set();
+      for (const s of lines) {
+        if (/^[A-Z]{5}$/.test(s) && !seen.has(s)) {
+          seen.add(s);
+          out.push(s);
+        }
+      }
+      return out;
     }
 
-    function renderAnswer(){
-      qa('#answerRow .tile').forEach((t,i)=>{
-        t.textContent = state.current[i] || '';
-      });
-    }
+    async function loadWordLists() {
+      openModal("loading", {message: "Fetching…"});
+      const btnRetry = document.getElementById("btnRetry");
 
-    function renderBank(){
-      // build 5 buttons
-      el.bankRow.innerHTML = '';
-      state.bank.forEach((b, i)=>{
-        const btn = document.createElement('button');
-        btn.type = 'button'; btn.className = 'bank-btn';
-        btn.textContent = b.ch; btn.disabled = !!b.used;
-        btn.setAttribute('data-index', String(i));
-        btn.addEventListener('click', ()=>onLetterTap(i));
-        el.bankRow.appendChild(btn);
-      });
-    }
-
-    function renderUI(){
-      renderLives();
-      renderLevel();
-      renderTimer();
-      renderAnswer();
-      renderBank();
-    }
-
-    // ===== Word lists =====
-    async function loadWordLists(){
-      openModal(el.loadingModal, true);
-      setLoadingStatus('Fetching…', true);
-      try{
+      try {
         const [aRes, gRes] = await Promise.all([
-          fetch('answers.txt', {cache:'no-store'}),
-          fetch('guesses.txt', {cache:'no-store'})
+          fetch("answers.txt", {cache: "no-store"}),
+          fetch("guesses.txt", {cache: "no-store"}),
         ]);
-        if(!aRes.ok || !gRes.ok) throw new Error('HTTP error');
-        const [aText, gText] = await Promise.all([aRes.text(), gRes.text()]);
-        const ans = aText.split(/\r?\n/).map(upper5).filter(x=>/^[A-Z]{5}$/.test(x));
-        const gue = gText.split(/\r?\n/).map(upper5).filter(x=>/^[A-Z]{5}$/.test(x));
-        if(!ans.length || !gue.length) throw new Error('Empty lists');
-        ANSWER_POOL = ans;
-        GUESSES_SET = new Set(gue);
-        setLoadingStatus(`Loaded ${ans.length} answers, ${gue.length} guesses.`, false);
-        // small delay for readability
-        setTimeout(()=>{
-          openModal(el.loadingModal, false);
-          openModal(el.introModal, true);
-          el.playBtn.focus();
-        }, 300);
-      } catch (e){
-        console.error(e);
-        setLoadingStatus('Error loading files. Serve over HTTP and ensure both files are beside index.html.', false);
-        el.retryBtn.disabled = false;
+        if (!aRes.ok || !gRes.ok) throw new Error("Network error");
+
+        const [aTxt, gTxt] = await Promise.all([aRes.text(), gRes.text()]);
+        const answers = normalizeList(aTxt);
+        const guesses = normalizeList(gTxt);
+
+        if (!answers.length || !guesses.length) {
+          if (btnRetry) btnRetry.disabled = false;
+          openModal("error", {message: "Empty list(s). Please check files and Retry."});
+          return;
+        }
+
+        // Build sets and validate: ANSWER_POOL ⊆ GUESSES_SET
+        const gset = new Set(guesses);
+        const missing = answers.find(w => !gset.has(w));
+        if (missing) {
+          if (btnRetry) btnRetry.disabled = false;
+          openModal("error", {message: "answers.txt must be a subset of guesses.txt. Please fix and Retry."});
+          return;
+        }
+
+        ANSWER_POOL = answers.slice(0);
+        GUESSES_SET = gset;
+
+        // Success → Intro
+        openModal("intro");
+      } catch (err) {
+        if (btnRetry) btnRetry.disabled = false;
+        openModal("error", {message: "Trouble loading word lists. Check server & files, then Retry."});
       }
     }
 
-    function setLoadingStatus(text, loading){
-      el.loadingBody.textContent = text;
-      el.retryBtn.disabled = !!loading;
-    }
-
-    // ===== Game flow =====
-    function startRun(){
-      state.lives = STARTING_LIVES;
-      state.level = 1;
-      state.runStartAt = performance.now();
-      state.lastAnnounceSec = null;
+    /* =========================
+       7) Game Core
+       ========================= */
+    function startRun() {
+      lives = STARTING_LIVES;
+      score = 0;
+      runStartAt = performance.now();
+      renderLives();
+      renderScore();
       nextWord(false);
     }
 
-    function buildBankFrom(word){
-      const letters = word.split('');
-      shuffle(letters);
-      return letters.slice(0,5).map(ch=>({ch, used:false}));
-    }
-
-    function nextWord(increment){
-      stopTimer();
-      if (increment) state.level++;
-      state.answerWord = ANSWER_POOL[randInt(ANSWER_POOL.length)];
-      state.bank = buildBankFrom(state.answerWord);
-      clearAll(); // resets current + placedIndex
-      renderUI();
+    function nextWord(increment) {
+      if (increment) {
+        score++;
+        renderScore();
+      }
+      // pick random answer
+      answerWord = ANSWER_POOL[(Math.random()*ANSWER_POOL.length)|0];
+      bank = buildBankFrom(answerWord);
+      current = ["","","","",""];
+      placedIndex = [null,null,null,null,null];
+      isAnimating = false;
+      renderAnswer();
+      renderBank();
       startTimer();
     }
 
-    function startTimer(){
-      state.deadlineAt = now() + COUNTDOWN_SECONDS*1000;
-      state.lastAnnounceSec = null;
-      renderTimer();
+    function buildBankFrom(word) {
+      const arr = word.split("").map(ch => ({ch, used:false}));
+      // Fisher–Yates
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function renderLives() {
+      elLives.innerHTML = "";
+      for (let i=0;i<STARTING_LIVES;i++) {
+        const d = document.createElement("div");
+        d.className = "life" + (i < lives ? "" : " off");
+        d.setAttribute("aria-hidden","true");
+        elLives.appendChild(d);
+      }
+      elLives.setAttribute("aria-label", `Lives: ${lives} of ${STARTING_LIVES}`);
+    }
+
+    function renderScore() {
+      elScore.textContent = `Score: ${score}`;
+    }
+
+    function renderAnswer() {
+      elAnswer.innerHTML = "";
+      for (let i=0;i<5;i++) {
+        const d = document.createElement("div");
+        d.className = "tile" + (current[i] ? "" : " empty");
+        d.textContent = current[i] || "";
+        elAnswer.appendChild(d);
+      }
+    }
+
+    function renderBank() {
+      elBank.innerHTML = "";
+      bank.forEach((b, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "bank-btn";
+        btn.type = "button";
+        btn.disabled = b.used;
+        btn.textContent = b.ch;
+        btn.addEventListener("click", () => onLetterTap(idx));
+        elBank.appendChild(btn);
+      });
+    }
+
+    function startTimer() {
       stopTimer();
-      state.timerHandle = setInterval(()=>{
-        renderTimer();
-        if (now() >= state.deadlineAt){
-          stopTimer();
-          onTimeout();
+      deadlineAt = performance.now() + COUNTDOWN_SECONDS * 1000;
+      lastAnnounceSec = null;
+      updateTimer(); // initial paint
+      tickHandle = setInterval(updateTimer, TICK_MS);
+    }
+
+    function stopTimer() {
+      if (tickHandle) {
+        clearInterval(tickHandle);
+        tickHandle = null;
+      }
+    }
+
+    function updateTimer() {
+      const now = performance.now();
+      const remainMs = Math.max(0, deadlineAt - now);
+      const pct = (remainMs / (COUNTDOWN_SECONDS * 1000)) * 100;
+      elTimerFill.style.width = pct + "%";
+
+      const sec = Math.ceil(remainMs / 1000);
+      elTimer.setAttribute("aria-valuenow", String(sec));
+      if (lastAnnounceSec !== sec && sec >= 0) {
+        lastAnnounceSec = sec;
+        if (sec % 1 === 0) {
+          elLive.textContent = `${sec} seconds remaining`;
         }
-      }, TICK_MS);
+      }
+
+      if (remainMs <= 0) {
+        stopTimer();
+        onTimeout();
+      }
     }
 
-    function stopTimer(){ if (state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; } }
-
-    function addTime(seconds){
-      const remain = Math.max(0, state.deadlineAt - now());
-      const newRemain = clamp(remain + seconds*1000, 0, MAX_TIME_SECONDS*1000);
-      state.deadlineAt = now() + newRemain;
-      renderTimer();
-    }
-
-    function onTimeout(){
-      // lose a life
-      state.lives = Math.max(0, state.lives - 1);
+    function onTimeout() {
+      if (isAnimating) return;
+      lives--;
       renderLives();
-      // reveal and shudder
-      revealAndShudder(state.answerWord, () => {
-        if (state.lives > 0){
-          nextWord(false); // same level, new word
+      // Reveal full answer & shudder (motion only)
+      revealAndShudder(answerWord).then(() => {
+        if (lives > 0) {
+          nextWord(false);
         } else {
           gameOver();
         }
       });
     }
 
-    function revealAndShudder(word, done){
-      state.modalOpen = true;
-      disableInputs(true);
-      state.current = word.split('');
-      state.placedIndex = [null,null,null,null,null];
+    async function revealAndShudder(word) {
+      isAnimating = true;
+      // Fill all slots
+      current = word.split("");
+      placedIndex = [null,null,null,null,null]; // clear linkages; bank will rebuild nextWord
       renderAnswer();
-      // play shudder on answer row
-      const row = el.answerRow;
-      row.classList.remove('shudder');
-      void row.offsetWidth; // reflow
-      row.classList.add('shudder');
-      setTimeout(()=>{ row.classList.remove('shudder'); state.modalOpen = false; disableInputs(false); done && done(); }, prefersReduced() ? 10 : 800);
+      // disable inputs (handled by isInputEnabled)
+      // Shudder
+      elAnswer.classList.remove("shudder");
+      void elAnswer.offsetWidth;
+      elAnswer.classList.add("shudder");
+      await waitMS(prefersReduced ? 120 : 900);
+      elAnswer.classList.remove("shudder");
+      isAnimating = false;
     }
 
-    function prefersReduced(){ return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
-
-    function gameOver(){
-      stopTimer();
-      const levelsCompleted = state.level - 1;
-      let runMs = Math.max(0, now() - state.runStartAt);
-      const mm = String(Math.floor(runMs/60000)).padStart(2,'0');
-      const ss = String(Math.floor((runMs%60000)/1000)).padStart(2,'0');
-      el.overBody.textContent = `You reached Level ${levelsCompleted}.${levelsCompleted>=0?` Run time ${mm}:${ss}.`:''}`;
-      openModal(el.overModal, true);
-      el.againBtn.focus();
-    }
-
-    function clearAll(){
-      for(let i=0;i<5;i++){
-        const bi = state.placedIndex[i];
-        if (bi!=null) state.bank[bi].used = false;
-        state.current[i] = '';
-        state.placedIndex[i] = null;
+    function evaluateGuess(guess) {
+      if (isAnimating) return;
+      if (GUESSES_SET.has(guess)) {
+        // Correct path
+        isAnimating = true;
+        stopTimer();
+        // Pop celebration
+        Array.from(elAnswer.children).forEach(tile => {
+          tile.classList.remove("pop");
+          void tile.offsetWidth;
+          tile.classList.add("pop");
+        });
+        setTimeout(() => {
+          isAnimating = false;
+          nextWord(true);
+        }, prefersReduced ? 80 : 600);
+      } else {
+        // Invalid path: shake + clear; no life loss; timer continues
+        isAnimating = true;
+        elAnswer.classList.remove("shake");
+        void elAnswer.offsetWidth;
+        elAnswer.classList.add("shake");
+        setTimeout(() => {
+          elAnswer.classList.remove("shake");
+          onClearAll();
+          isAnimating = false;
+        }, prefersReduced ? 60 : 220);
       }
-      renderAnswer();
-      renderBank();
     }
 
-    function onLetterTap(bankIndex){
-      if (state.modalOpen) return;
-      const b = state.bank[bankIndex];
+    function autoSubmitIfFull() {
+      if (current.every(c => c)) {
+        evaluateGuess(current.join(""));
+      }
+    }
+
+    function firstEmptySlot() {
+      for (let i=0;i<5;i++) if (!current[i]) return i;
+      return -1;
+    }
+
+    function onLetterTap(bankIndex) {
+      if (!isInputEnabled()) return;
+      const b = bank[bankIndex];
       if (!b || b.used) return;
-      const slot = state.current.indexOf('');
+      const slot = firstEmptySlot();
       if (slot === -1) return;
-      state.current[slot] = b.ch;
-      state.placedIndex[slot] = bankIndex;
       b.used = true;
-      // slot pop
-      const tile = el.answerRow.querySelector(`[data-slot="${slot}"]`);
-      if (tile){ tile.classList.remove('pop'); void tile.offsetWidth; tile.classList.add('pop'); }
+      current[slot] = b.ch;
+      placedIndex[slot] = bankIndex;
+      // Pop the tile
+      const tile = elAnswer.children[slot];
+      if (tile) {
+        tile.classList.remove("pop");
+        void tile.offsetWidth;
+        tile.classList.add("pop");
+      }
       renderBank();
+      renderAnswer();
       autoSubmitIfFull();
     }
 
-    function onShuffle(){
-      // jiggle bank row
-      const row = el.bankRow;
-      row.classList.remove('jiggle'); void row.offsetWidth; row.classList.add('jiggle');
-      // shuffle only unused entries among their positions
-      const unusedIdx = state.bank.map((b,i)=>b.used?null:i).filter(i=>i!=null);
-      const unused = unusedIdx.map(i=>state.bank[i]);
-      const shuffled = shuffle(unused.slice());
-      unusedIdx.forEach((idx,k)=>{ state.bank[idx] = shuffled[k]; });
+    function onShuffle() {
+      if (!isInputEnabled()) return;
+      // Shuffle only unused bank letters, keep used in place
+      const unusedPos = [];
+      const unusedLetters = [];
+      bank.forEach((b, idx) => { if (!b.used) { unusedPos.push(idx); unusedLetters.push(b.ch); }});
+      // Fisher–Yates on letters
+      for (let i = unusedLetters.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [unusedLetters[i], unusedLetters[j]] = [unusedLetters[j], unusedLetters[i]];
+      }
+      // Write back to those positions
+      unusedPos.forEach((pos, i) => { bank[pos].ch = unusedLetters[i]; });
+
+      // Jiggle animation on bank
+      elBank.classList.remove("jiggle");
+      void elBank.offsetWidth;
+      elBank.classList.add("jiggle");
+      setTimeout(() => elBank.classList.remove("jiggle"), prefersReduced ? 60 : 260);
+
       renderBank();
     }
 
-    function autoSubmitIfFull(){
-      if (state.current.every(ch => ch)){
-        evaluateGuess(state.current.join(''));
+    function onClearAll() {
+      // Free all placed letters
+      for (let i=0;i<5;i++) {
+        const bi = placedIndex[i];
+        if (bi !== null) { bank[bi].used = false; }
+        current[i] = "";
+        placedIndex[i] = null;
       }
+      renderBank();
+      renderAnswer();
     }
 
-    function evaluateGuess(guess){
-      if (guess === state.answerWord){
-        // correct
-        stopTimer();
-        // celebration (pop tiles)
-        qa('#answerRow .tile').forEach((t)=>{ t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); });
-        setTimeout(()=>{ nextWord(true); }, prefersReduced()? 10 : 520);
+    function gameOver() {
+      stopTimer();
+      openModal("gameover");
+    }
+
+    function isInputEnabled() {
+      return !anyModalOpen && !isAnimating;
+    }
+
+    function waitMS(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function formatMMSS(totalSec) {
+      const m = Math.floor(totalSec/60);
+      const s = totalSec%60;
+      return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    }
+
+    /* =========================
+       8) Keyboard Controls
+       ========================= */
+    window.addEventListener("keydown", (e) => {
+      if (anyModalOpen) return; // suppressed during modals
+      if (isAnimating) return;  // suppressed during animations
+
+      const key = e.key;
+      if (key === " " || key === "Spacebar") {
+        e.preventDefault();
+        onShuffle();
         return;
       }
-      if (GUESSES_SET.has(guess)){
-        // valid but wrong: +5s and clear row (no life lost)
-        addTime(TIME_BOOST_SECONDS);
-        clearAll();
-      } else {
-        // invalid: shake + clear (no life lost)
-        const row = el.answerRow;
-        row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake');
-        setTimeout(()=>{ row.classList.remove('shake'); clearAll(); }, prefersReduced()? 10 : 220);
+      if (key === "Backspace" || key === "Delete") {
+        e.preventDefault(); // avoid browser nav
+        onClearAll();
+        return;
       }
-    }
-
-    function disableInputs(disabled){
-      el.shuffleBtn.disabled = disabled;
-      el.clearBtn.disabled = disabled;
-      qa('#bankRow .bank-btn').forEach(b=> b.disabled = true);
-    }
-
-    // ===== Modals =====
-    function openModal(modal, open){
-      if (open){
-        el.backdrop.classList.add('open');
-        modal.setAttribute('aria-hidden','false');
-        modal.style.display = 'grid';
-        state.modalOpen = true;
-      } else {
-        modal.setAttribute('aria-hidden','true');
-        modal.style.display = 'none';
-        // check others
-        const anyOpen = [el.loadingModal, el.introModal, el.overModal].some(m=>m.getAttribute('aria-hidden')==='false');
-        if (!anyOpen) { el.backdrop.classList.remove('open'); state.modalOpen = false; }
+      if (/^[a-zA-Z]$/.test(key)) {
+        const ch = key.toUpperCase();
+        // place the LEFTMOST unused matching bank letter into next empty slot
+        const idx = bank.findIndex(b => !b.used && b.ch === ch);
+        if (idx !== -1) {
+          e.preventDefault();
+          onLetterTap(idx);
+        }
       }
-    }
+    });
 
-    // ===== Keyboard =====
-    function onKey(e){
-      if (state.modalOpen) return;
-      if (e.key === ' '){ e.preventDefault(); onShuffle(); return; }
-      if (e.key === 'Backspace' || e.key === 'Delete'){ e.preventDefault(); clearAll(); return; }
-      const k = e.key.toUpperCase();
-      if (/^[A-Z]$/.test(k)){
-        // find first unused bank entry matching k
-        const idx = state.bank.findIndex(b=>!b.used && b.ch === k);
-        if (idx !== -1){ onLetterTap(idx); }
-      }
-    }
+    /* =========================
+       9) Wire up controls
+       ========================= */
+    elShuffle.addEventListener("click", onShuffle);
+    elClear.addEventListener("click", onClearAll);
 
-    // ===== Events =====
-    el.shuffleBtn.addEventListener('click', onShuffle);
-    el.clearBtn.addEventListener('click', clearAll);
-    window.addEventListener('keydown', onKey);
-
-    el.themeToggle.addEventListener('click', ()=> setTheme());
-
-    el.retryBtn.addEventListener('click', ()=>{ el.retryBtn.disabled = true; setLoadingStatus('Retrying…', true); loadWordLists(); });
-    el.playBtn.addEventListener('click', ()=>{ openModal(el.introModal,false); startRun(); });
-    el.againBtn.addEventListener('click', ()=>{ openModal(el.overModal,false); startRun(); });
-
-    // ===== Kickoff =====
+    /* =========================
+       10) Kickoff – load lists
+       ========================= */
     loadWordLists();
+
   })();
   </script>
 </body>
