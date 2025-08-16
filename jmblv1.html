@@ -553,6 +553,37 @@
       play(bankRow, 'jiggle');
     }
 
+    /* NEW — remove the rightmost placed letter and return it to the bank */
+function onBackspace(opts = { animate: true }){
+  if (state.isAnimating || state.modalOpen) return;
+
+  // find rightmost non-empty slot
+  let i = -1;
+  for (let j = 4; j >= 0; j--) { if (state.current[j]) { i = j; break; } }
+  if (i === -1) return; // nothing to remove
+
+  // restore bank letter that originally filled this slot
+  const bi = state.placedIndex[i];
+  if (bi !== null) { state.bank[bi].used = false; }
+
+  // clear the slot
+  state.current[i] = "";
+  state.placedIndex[i] = null;
+
+  // re-render UI
+  renderAnswer();
+  renderBank();
+
+  // small feedback on the slot we edited
+  if (opts.animate) {
+    const slotEl = answerRow.children[i];
+    if (slotEl) play(slotEl, 'shake-soft');
+  }
+
+  // a11y announce
+  announcer.textContent = `Removed letter from slot ${i+1}`;
+}
+
     function onClearAll(opts = { animate: true, force: false }){
   // If a PointerEvent accidentally arrives, fall back to defaults
   if (opts && typeof opts === 'object' && ('type' in opts) && ('pointerId' in opts)) {
