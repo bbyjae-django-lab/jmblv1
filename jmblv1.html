@@ -40,7 +40,13 @@
       user-select: none;
       -webkit-touch-callout: none;
     }   
-
+    /* Also disable text selection/callouts inside modals */
+    .dialog, .dialog *:not(input):not(textarea){
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    
     /* ------------------------------
        1) App shell & safe-area insets
        ------------------------------ */
@@ -79,8 +85,24 @@
     .score{ text-align:center; font-size:21px; font-weight:700; color:var(--muted); }
 
     .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
-    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
-    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
+    .timer-rail{
+  position:relative;
+  height:18px;                 /* taller */
+  border-radius: var(--radius);/* less pill, more like other buttons */
+  background:var(--track);
+  overflow:hidden;
+  padding:2px;                 /* creates the outline/padding look */
+  box-sizing: border-box;
+}
+.timer-fill{
+  position:absolute;
+  inset:2px;                   /* respect the rail padding */
+  transform-origin:left center;
+  transform: scaleX(1);
+  background:var(--fg);
+  border-radius: calc(var(--radius) - 4px); /* slightly squared ends */
+  transition: transform 100ms linear;
+}
 
     .header{ margin-top: 4px; margin-bottom: 6px; }
     .lives{  margin-bottom: 6px; }
@@ -126,19 +148,18 @@
     .theme-bottom{ display:flex; justify-content:center; }
     .theme-bottom{ display:flex; justify-content:center; }
 
-    /* Make the button hug the icon instead of stretching */
     #themeBtn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:auto;         /* was 100% */
-      max-width:none;     /* remove cap */
-      padding:8px;        /* small pill around icon */
-      border:1px solid var(--border);
-      border-radius:9999px;
-      background:var(--btn-bg);
-      color:var(--fg);
-    }
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:48px;
+    height:48px;
+    padding:0;
+    border:1px solid var(--border);
+    border-radius: var(--radius); /* rounded square */
+    background:var(--btn-bg);
+    color:var(--fg);
+  }
 
     #themeIcon{
       width:28px;
@@ -155,7 +176,7 @@
        ------------------------------ */
     @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
     @keyframes jiggle{ 0%,100%{ transform:rotate(0) } 25%{ transform:rotate(-2deg) } 75%{ transform:rotate(2deg) } }
-    @keyframes pop{ 0%{ transform:scale(1) } 50%{ transform:scale(1.06) } 100%{ transform:scale(1) } }
+    @keyframes pop{ 0%{ transform:scale(1) } 50%{ transform:scale(1.075) } 100%{ transform:scale(1) } }
 
     .shake{ animation: shake .22s linear; }
     .jiggle{ animation: jiggle .26s ease-in-out; }
@@ -585,21 +606,22 @@
     return;
   }
 
-  // Invalid: shake, then clear (with a guard for older iOS Safari)
+  // Invalid: shake, then clear — robust on older iOS
   state.isAnimating = true;
   play(answerRow, 'shake');
 
+  let cleared = false;
   const finish = () => {
+    if (cleared) return;
+    cleared = true;
     answerRow.removeEventListener('animationend', finish);
     onClearAll({ animate: false });
     state.isAnimating = false;
   };
 
-  // Prefer animationend, but add a tiny timeout in case it’s dropped
+  // Prefer animationend, but also guard with a timeout
   answerRow.addEventListener('animationend', finish, { once: true });
-  setTimeout(() => {
-    if (state.isAnimating) finish();
-  }, 260); // ~.22s shake + a small buffer
+  const guard = setTimeout(finish, 320); // ~.22s shake + buffer
 }
 
 
@@ -614,8 +636,8 @@
     /* ------------------------------
        9) Events — clicks & keyboard
        ------------------------------ */
-       // Letter taps: run on release (click removes 300ms delay with our viewport meta)
-      bankRow.addEventListener('click', (e)=>{
+       // Letter taps: run on release
+      bankRow.addEventListener('pointerup', (e)=>{
         const t = e.target;
         if(!(t instanceof HTMLElement)) return;
         if(t.classList.contains('btn-letter')){
@@ -624,18 +646,15 @@
         }
       });
 
-      // Buttons: visual feedback on press, action on release
-      shuffleBtn.addEventListener('pointerdown', ()=> bounce(shuffleBtn));
-      shuffleBtn.addEventListener('pointerup',   ()=> onShuffle());
-      clearBtn.addEventListener('pointerdown',   ()=> bounce(clearBtn));
-      clearBtn.addEventListener('pointerup',     ()=> onClearAll());
-
-    function bounce(btn){
-      btn.classList.remove('press');
-      void btn.offsetWidth; // restart
-      btn.classList.add('press');
-      setTimeout(()=>btn.classList.remove('press'), 140);
-    }
+      // Buttons: stay "pressed" while held; pop back on pointerup, then run action
+      function makeTap(btn, handler){
+        btn.addEventListener('pointerdown', ()=> btn.classList.add('press'));
+        btn.addEventListener('pointerup',   (e)=>{ btn.classList.remove('press'); handler(e); });
+        btn.addEventListener('pointercancel', ()=> btn.classList.remove('press'));
+        btn.addEventListener('pointerleave',  ()=> btn.classList.remove('press'));
+      }
+      makeTap(shuffleBtn, onShuffle);
+      makeTap(clearBtn,   onClearAll);
 
     document.addEventListener('keydown', (e)=>{
       if(state.modalOpen || state.isAnimating) return;
