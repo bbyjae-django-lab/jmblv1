@@ -437,10 +437,8 @@
       state.isAnimating = true;
       for(let i=0;i<5;i++){ state.current[i] = state.answerWord[i]; }
       renderAnswer();
-      answerRow.classList.remove('shudder','jiggle','pop');
-      void answerRow.offsetWidth; // force reflow so the animation can restart
+      answerRow.classList.remove('shake','jiggle','pop');
       answerRow.classList.add('shudder');
-
       setTimeout(()=>{
         answerRow.classList.remove('shudder');
         state.isAnimating = false;
