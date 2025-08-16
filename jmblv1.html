@@ -28,19 +28,26 @@
 
     *, *::before, *::after{ box-sizing: border-box; }
     html, body{ height:100%; }
-    body{ margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--fg); -webkit-text-size-adjust:100%; }
+    body{ margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--fg); -webkit-text-size-adjust:100%; overflow-x:hidden; }
     :focus{ outline: auto; }
     :focus:not(:focus-visible){ outline: none; }
     a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-    button{ font:inherit; color:inherit; background:var(--btn-bg); border:1px solid var(--border); border-radius: var(--radius); padding:.75rem 1rem; cursor:pointer; }
+    button{ font:inherit; color:inherit; background:var(--btn-bg); border:1px solid var(--border); border-radius: var(--radius); padding:1rem 1rem; cursor:pointer; }
     button:disabled{ opacity:.35; cursor: default; }
+    /* Disable text selection/callouts inside the play area */
+    .app, .app *:not(input):not(textarea){
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }   
 
     /* ------------------------------
        1) App shell & safe-area insets
        ------------------------------ */
     .app{
-      width: min(var(--vw, 100vw), var(--maxw));
-      height: 100dvh;
+      width: min(100%, var(--maxw));      /* avoids visualViewport rounding on old iOS */
+      min-height: 100vh;                  /* fallback */
+      height: 100dvh;                     /* modern browsers */
       margin: 0 auto;
       display:flex; flex-direction:column;
       padding: calc(env(safe-area-inset-top) + 16px) 12px calc(env(safe-area-inset-bottom) + 18px);
@@ -75,18 +82,30 @@
     .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
     .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
 
+    .header{ margin-top: 4px; margin-bottom: 6px; }
+    .lives{  margin-bottom: 6px; }
+    .score{  margin-top: 4px; margin-bottom: 10px; }
+    .timer-card{ margin-top: 4px; margin-bottom: 10px; }
+    .row{ margin-top: 6px; margin-bottom: 10px; }
+    .bank{ margin-top: 6px; margin-bottom: 12px; }
+    .controls{ margin-top: 6px; margin-bottom: 10px; }
+    .theme-bottom{ margin-top: 6px; }
+
     /* ------------------------------
        4) Squares: Answer row & Letter bank
        ------------------------------ */
-    .row, .bank{ display:grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
-    .tile, .btn-letter{
-      aspect-ratio:1/1;
-      min-inline-size:64px; /* touch target */
-      border:1px solid var(--border); border-radius: var(--radius);
-      background: var(--tile-bg); color:var(--tile-fg);
-      display:grid; place-items:center; font-weight:900; font-size: clamp(22px, 8vw, 34px);
-      user-select:none;
-    }
+      .row, .bank{ display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--gap); }
+      .tile, .btn-letter{
+    aspect-ratio:1/1;
+    min-inline-size:64px;
+    border:1px solid var(--border); border-radius: var(--radius);
+    background: var(--tile-bg); color:var(--tile-fg);
+    display:flex; align-items:center; justify-content:center; /* older iOS centering */
+    line-height:1;                                             /* avoid vertical bias */
+    font-weight:900;
+    font-size: clamp(24px, 8.5vw, 36px);  /* slightly larger */
+    user-select:none;
+  }
     .tile{ background:var(--tile-bg); }
     .tile.empty{ color: var(--muted); }
     .btn-letter{ background:var(--btn-bg); }
@@ -105,20 +124,26 @@
     .controls button{ font-weight:700; }
     .card .actions button{ font-weight:700; }
     .theme-bottom{ display:flex; justify-content:center; }
+    .theme-bottom{ display:flex; justify-content:center; }
+
+    /* Make the button hug the icon instead of stretching */
     #themeBtn{
-      width:100%;
-      max-width:240px;
-      padding:12px 0;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:auto;         /* was 100% */
+      max-width:none;     /* remove cap */
+      padding:8px;        /* small pill around icon */
       border:1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius:9999px;
       background:var(--btn-bg);
       color:var(--fg);
     }
+
     #themeIcon{
       width:28px;
       height:28px;
       display:block;
-      margin:0 auto;
     }
     /* ------------------------------
        6) Spacer to aid tall screens
@@ -548,22 +573,23 @@
 
     function evaluateGuess(guess){
       if(GUESSES_SET.has(guess)){
-        // Correct (any real anagram in guesses.txt). Celebrate, advance, refill timer.
+        // Correct: soft-pop the bar + pop each tile in sync
         stopTimer();
         state.isAnimating = true;
-        play(answerRow, 'pop');
+        play(answerRow, 'pop-soft');
+        [...answerRow.children].forEach(el => play(el, 'pop'));
         setTimeout(()=>{ state.isAnimating = false; nextWord(true); }, 600);
       }
       else{
-      // Invalid: shake, then clear when the shake actually finishes
-      state.isAnimating = true;
-      play(answerRow, 'shake');
-      const onEnd = (e)=>{
-        if(e.animationName === 'shake'){
-          answerRow.removeEventListener('animationend', onEnd);
-          onClearAll({ animate:false });
-          state.isAnimating = false;
-        }
+  // Invalid: shake, then clear after a guard timeout (older iOS sometimes drops animationend)
+  state.isAnimating = true;
+  play(answerRow, 'shake');
+  setTimeout(()=>{
+    onClearAll({ animate:false });
+    state.isAnimating = false;
+  }, 240); // ~.22s shake + tiny buffer
+}
+
       };
       answerRow.addEventListener('animationend', onEnd, { once:true });
     }
@@ -580,10 +606,21 @@
     /* ------------------------------
        9) Events — clicks & keyboard
        ------------------------------ */
-       bankRow.addEventListener('pointerdown', (e)=>{ const t = e.target; if(!(t instanceof HTMLElement)) return; if(t.classList.contains('btn-letter')){ const idx = Number(t.dataset.idx); onLetterTap(idx); } });
+       // Letter taps: run on release (click removes 300ms delay with our viewport meta)
+      bankRow.addEventListener('click', (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(t.classList.contains('btn-letter')){
+          const idx = Number(t.dataset.idx);
+          onLetterTap(idx);
+        }
+      });
 
-      shuffleBtn.addEventListener('pointerdown', ()=>{ bounce(shuffleBtn); onShuffle(); });
-      clearBtn.addEventListener('pointerdown', ()=>{ bounce(clearBtn); onClearAll(); });
+      // Buttons: visual feedback on press, action on release
+      shuffleBtn.addEventListener('pointerdown', ()=> bounce(shuffleBtn));
+      shuffleBtn.addEventListener('pointerup',   ()=> onShuffle());
+      clearBtn.addEventListener('pointerdown',   ()=> bounce(clearBtn));
+      clearBtn.addEventListener('pointerup',     ()=> onClearAll());
 
     function bounce(btn){
       btn.classList.remove('press');
