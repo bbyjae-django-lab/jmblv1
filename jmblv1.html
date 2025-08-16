@@ -53,20 +53,23 @@
        2) Header (3-col grid)
        ------------------------------ */
     .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
-    .title{ text-align:center; font-weight:700; letter-spacing:.12em; }
+    .title{ text-align:center; font-weight:700; letter-spacing:.12em; font-size:3em; }
     .theme-wrap{ justify-self:end; }
     .icon{ width:22px; height:22px; display:block; }
+    .icon svg{ width:100%; height:100%; display:block; }
+    .theme-bottom{ display:flex; justify-content:center; }
+    .icon{ width:28px; height:28px; display:block; } /* was 22px */
     .icon svg{ width:100%; height:100%; display:block; }
 
     /* ------------------------------
        3) Lives, Score, Timer
        ------------------------------ */
     .lives{ display:flex; justify-content:center; gap:8px; }
-    .pip{ width:16px; aspect-ratio:1/1; border:1px solid var(--border); border-radius:6px; background: transparent;    }
+    .pip{ width:24px; aspect-ratio:1/1; border:1px solid var(--border); border-radius:6px; background: transparent; }
     .pip.off{ opacity:.32; }
     .lives .pip:not(.off){ background: var(--fg); }
 
-    .score{ text-align:center; font-size:14px; color:var(--muted); }
+    .score{ text-align:center; font-size:21px; font-weight:700; color:var(--muted); }
 
     .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
     .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
@@ -92,8 +95,15 @@
     /* ------------------------------
        5) Controls
        ------------------------------ */
-    .controls{ display:flex; justify-content:center; gap:12px; }
-    .press{ transform: scale(.96); transition: transform 120ms ease; }
+       .controls{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--gap);
+      }
+      .controls button{ width:100%; } /* will also be bold from §3.4 */
+          .press{ transform: scale(.96); transition: transform 120ms ease; }
+    .controls button{ font-weight:700; }
+    .card .actions button{ font-weight:700; }
 
     /* ------------------------------
        6) Spacer to aid tall screens
@@ -110,7 +120,18 @@
     .shake{ animation: shake .22s linear; }
     .jiggle{ animation: jiggle .26s ease-in-out; }
     .pop{ animation: pop .6s ease; }
+    /* Soft variants */
+    @keyframes shakeSoft{
+      0%,100%{ transform:translateX(0) }
+      20%{ transform:translateX(-3px) } 40%{ transform:translateX(3px) }
+      60%{ transform:translateX(-2px) } 80%{ transform:translateX(2px) }
+    }
+    .shake-soft{ animation: shakeSoft .22s linear; }
 
+    @keyframes popSoft{
+      0%{ transform:scale(1) } 50%{ transform:scale(1.03) } 100%{ transform:scale(1) }
+    }
+    .pop-soft{ animation: popSoft .45s ease; }
     @media (prefers-reduced-motion: reduce){
       .shake, .jiggle, .pop{ animation-duration: .01s; }
       .timer-fill{ transition: none; }
@@ -127,6 +148,8 @@
     .card h2{ margin:0 0 10px; letter-spacing:.06em; }
     .card p{ margin:.5rem 0; color:var(--muted); }
     .card .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+    .controls button{ font-weight:700; }
+    .card .actions button{ font-weight:700; }
 
     /* ------------------------------
        9) Visually-hidden for a11y
@@ -140,24 +163,6 @@
     <header class="header">
       <div></div>
       <div class="title" aria-hidden="true">JUMBL</div>
-      <div class="theme-wrap">
-        <button id="themeBtn" class="icon" aria-label="Toggle theme" title="Toggle theme">
-          <!-- default sun (monochrome, symmetric) -->
-          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"></circle>
-            <g>
-              <line x1="12" y1="1.5" x2="12" y2="4.5"></line>
-              <line x1="12" y1="19.5" x2="12" y2="22.5"></line>
-              <line x1="1.5" y1="12" x2="4.5" y2="12"></line>
-              <line x1="19.5" y1="12" x2="22.5" y2="12"></line>
-              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"></line>
-              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"></line>
-              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"></line>
-              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"></line>
-            </g>
-          </svg>
-        </button>
-      </div>
     </header>
 
     <!-- Lives -->
@@ -184,7 +189,11 @@
     </div>
 
     <div class="spacer" aria-hidden="true"></div>
-
+    <div class="theme-bottom">
+      <button id="themeBtn" class="icon" aria-label="Toggle theme" title="Toggle theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+      </button>
+    </div>    
     <!-- A11y announcer for granular updates (letters placed, etc.) -->
     <div id="announcer" class="sr-only" aria-live="polite"></div>
   </div>
@@ -264,6 +273,11 @@
     window.addEventListener('orientationchange', setVW);
     window.addEventListener('resize', setVW);
     window.addEventListener('pageshow', setVW);
+    if(window.visualViewport){
+    visualViewport.addEventListener('resize', syncControlHeights);
+    }
+    window.addEventListener('resize', syncControlHeights);
+
 
     /* ------------------------------
        4) Theme (persist localStorage)
@@ -274,24 +288,18 @@
     function initTheme(){ applyTheme(localStorage.getItem(THEME_KEY) || getSystemTheme()); }
     function toggleTheme(){ const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light'); updateThemeIcon(); }
     function updateThemeIcon(){
-      const isDark = document.documentElement.classList.contains('dark');
-      const svg = $("#themeIcon");
-      if(!svg) return;
-      // swap between sun and moon (monochrome)
-      if(isDark){
-        svg.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
-      }else{
-        svg.innerHTML = '<circle cx="12" cy="12" r="4"></circle>'+
-                         '<line x1="12" y1="1.5" x2="12" y2="4.5"></line>'+
-                         '<line x1="12" y1="19.5" x2="12" y2="22.5"></line>'+
-                         '<line x1="1.5" y1="12" x2="4.5" y2="12"></line>'+
-                         '<line x1="19.5" y1="12" x2="22.5" y2="12"></line>'+
-                         '<line x1="4.22" y1="4.22" x2="6.34" y2="6.34"></line>'+
-                         '<line x1="17.66" y1="17.66" x2="19.78" y2="19.78"></line>'+
-                         '<line x1="4.22" y1="19.78" x2="6.34" y2="17.66"></line>'+
-                         '<line x1="17.66" y1="6.34" x2="19.78" y2="4.22"></line>';
-      }
-    }
+  const isDark = document.documentElement.classList.contains('dark');
+  const svg = $("#themeIcon");
+  if(!svg) return;
+  svg.setAttribute('viewBox','0 0 24 24');
+  if(isDark){
+    // filled crescent moon
+    svg.innerHTML = '<path fill="currentColor" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  }else{
+    // filled sun disc
+    svg.innerHTML = '<circle cx="12" cy="12" r="7" fill="currentColor"/>';
+  }
+}
     $("#themeBtn").addEventListener('click', toggleTheme);
 
     /* ------------------------------
@@ -381,6 +389,7 @@
       });
       bankRow.innerHTML = '';
       bankRow.appendChild(frag);
+      syncControlHeights();
     }
 
     function renderUI(){
@@ -390,6 +399,14 @@
       renderAnswer();
       renderBank();
     }
+    function syncControlHeights(){
+  const tile = bankRow.querySelector('.btn-letter');
+  const h = tile ? Math.round(tile.getBoundingClientRect().height) : 0;
+  if(h){
+    shuffleBtn.style.height = h + 'px';
+    clearBtn.style.height = h + 'px';
+  }
+}
 
     /* ------------------------------
        7) Timer control
@@ -459,12 +476,11 @@
       announcer.textContent = `Placed ${b.ch} in slot ${idx+1}`;
       // slot pop
       answerRow.classList.remove('shake'); // ensure no lingering shake
-      answerRow.classList.remove('pop');
+      answerRow.classList.remove('pop','pop-soft');
       void answerRow.offsetWidth; // reflow to restart animation
-      answerRow.classList.add('pop');
-      // remove .pop when that animation finishes so future .shake isn't overridden
+      answerRow.classList.add('pop-soft');
       answerRow.addEventListener('animationend', (e)=>{
-        if (e.animationName === 'pop') answerRow.classList.remove('pop');
+        if (e.animationName === 'popSoft') answerRow.classList.remove('pop-soft');
       }, { once:true });
       autoSubmitIfFull();
     }
@@ -481,27 +497,28 @@
       bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
     }
 
-    function onClearAll(){
-      if(state.isAnimating || state.modalOpen) return;
-      for(let i=0;i<5;i++){
-        const bi = state.placedIndex[i];
-        if(bi !== null){ state.bank[bi].used = false; }
-        state.current[i] = "";
-        state.placedIndex[i] = null;
-      }
-      renderAnswer();
-      renderBank();
-      // shake to acknowledge clear (ensure .pop isn't masking .shake)
-      answerRow.classList.remove('pop');
-      answerRow.classList.remove('shake');
-      void answerRow.offsetWidth; // restart
-      answerRow.classList.add('shake');
-      // remove .shake when it finishes so it can't "come back" after .pop ends
-      answerRow.addEventListener('animationend', (e)=>{
-        if (e.animationName === 'shake') answerRow.classList.remove('shake');
-      }, { once:true });
+    function onClearAll(opts = { animate: true }){
+  if(state.isAnimating || state.modalOpen) return;
+  for(let i=0;i<5;i++){
+    const bi = state.placedIndex[i];
+    if(bi !== null){ state.bank[bi].used = false; }
+    state.current[i] = "";
+    state.placedIndex[i] = null;
+  }
+  renderAnswer();
+  renderBank();
 
-    }
+  // animate clear only if requested (prevents double-shake on invalid)
+  if (opts.animate){
+    answerRow.classList.remove('pop','shake','shake-soft');
+    void answerRow.offsetWidth;
+    // half-strength clear animation (added in §2)
+    answerRow.classList.add('shake-soft');
+    answerRow.addEventListener('animationend', (e)=>{
+      if (e.animationName === 'shakeSoft') answerRow.classList.remove('shake-soft');
+    }, { once:true });
+  }
+}
 
     function autoSubmitIfFull(){
       if(state.current.every(c=>c)){
@@ -527,7 +544,7 @@
           if (e.animationName === 'shake') answerRow.classList.remove('shake');
         }, { once:true });
 
-        setTimeout(onClearAll, 220);
+        setTimeout(()=> onClearAll({ animate:false }), 220);
       }
     }
 
