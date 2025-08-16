@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>JUMBL</title>
   <style>
@@ -32,6 +32,9 @@
     :focus{ outline: auto; }
     :focus:not(:focus-visible){ outline: none; }
     a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    html, body, #app{
+      touch-action: none;
+    }
     button{ font:inherit; color:inherit; background:var(--btn-bg); border:1px solid var(--border); border-radius: var(--radius); padding:1rem 1rem; cursor:pointer; }
     button:disabled{ opacity:.35; cursor: default; }
     /* Disable text selection/callouts inside the play area */
@@ -50,17 +53,27 @@
     /* ------------------------------
        1) App shell & safe-area insets
        ------------------------------ */
-    .app{
-      width: min(100%, var(--maxw));      /* avoids visualViewport rounding on old iOS */
-      min-height: 100vh;                  /* fallback */
-      height: 100dvh;                     /* modern browsers */
-      margin: 0 auto;
-      display:flex; flex-direction:column;
-      padding: calc(env(safe-area-inset-top) + 16px) 12px calc(env(safe-area-inset-bottom) + 18px);
-      overflow: hidden; /* no scroll bounce */
-      overscroll-behavior: none;
-      gap: 16px;
-    }
+       .app{
+        /* Use visualViewport width (via --vw) to avoid iOS rounding bleed */
+        width: min(calc(var(--vw, 100vw)), var(--maxw));
+
+        min-height: 100vh;               /* fallback */
+        height: 100dvh;                  /* modern browsers */
+        margin: 0 auto;
+        display:flex; flex-direction:column;
+
+        /* Safe-area aware side padding + base margin */
+        padding:
+          calc(env(safe-area-inset-top) + 16px)
+          max(12px, calc(env(safe-area-inset-right) + 12px))
+          calc(env(safe-area-inset-bottom) + 18px)
+          max(12px, calc(env(safe-area-inset-left) + 12px));
+
+        overflow: hidden;                /* no scroll bounce */
+        overscroll-behavior: none;
+        gap: 16px;
+      }
+
 
     /* ------------------------------
        2) Header (3-col grid)
@@ -310,10 +323,14 @@
     /* ------------------------------
        3) Viewport var --vw updates
        ------------------------------ */
-    function setVW(){
-      const w = (window.visualViewport ? visualViewport.width : window.innerWidth) || window.innerWidth;
-      document.documentElement.style.setProperty('--vw', w + 'px');
-    }
+       function setVW(){
+        const vv = window.visualViewport;
+        const w = (vv ? vv.width  : window.innerWidth)  || window.innerWidth;
+        const h = (vv ? vv.height : window.innerHeight) || window.innerHeight;
+        // Round to whole pixels to avoid sub-pixel overflow/bleed on older iOS
+        document.documentElement.style.setProperty('--vw', Math.round(w) + 'px');
+        document.documentElement.style.setProperty('--vh', Math.round(h) + 'px');
+      }
     setVW();
     if(window.visualViewport){
       visualViewport.addEventListener('resize', setVW);
@@ -327,6 +344,29 @@
     }
     window.addEventListener('resize', syncControlHeights);
 
+   /* ------------------------------
+   3b) Kill pinch/double-tap zoom within the app
+   ------------------------------ */
+(function preventZoom(){
+  // Safari fires non-standard gesture events for pinch
+  ['gesturestart','gesturechange','gestureend'].forEach(type=>{
+    app.addEventListener(type, (e)=> e.preventDefault(), { passive:false });
+  });
+
+  // Block two-finger pinch on other engines
+  app.addEventListener('touchstart', (e)=>{
+    if(e.touches.length > 1) e.preventDefault();
+  }, { passive:false });
+
+  // Block iOS double-tap-to-zoom (quick second tap)
+  let lastTouchEnd = 0;
+  app.addEventListener('touchend', (e)=>{
+    const now = Date.now();
+    if(now - lastTouchEnd < 350){ e.preventDefault(); }
+    lastTouchEnd = now;
+  }, { passive:false });
+})();
+ 
 
     /* ------------------------------
        4) Theme (persist localStorage)
