@@ -85,24 +85,8 @@
     .score{ text-align:center; font-size:21px; font-weight:700; color:var(--muted); }
 
     .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
-    .timer-rail{
-  position:relative;
-  height:18px;                 /* taller */
-  border-radius: var(--radius);/* less pill, more like other buttons */
-  background:var(--track);
-  overflow:hidden;
-  padding:2px;                 /* creates the outline/padding look */
-  box-sizing: border-box;
-}
-.timer-fill{
-  position:absolute;
-  inset:2px;                   /* respect the rail padding */
-  transform-origin:left center;
-  transform: scaleX(1);
-  background:var(--fg);
-  border-radius: calc(var(--radius) - 4px); /* slightly squared ends */
-  transition: transform 100ms linear;
-}
+    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
+    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
 
     .header{ margin-top: 4px; margin-bottom: 6px; }
     .lives{  margin-bottom: 6px; }
