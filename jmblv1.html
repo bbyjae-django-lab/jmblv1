@@ -62,8 +62,9 @@
        3) Lives, Score, Timer
        ------------------------------ */
     .lives{ display:flex; justify-content:center; gap:8px; }
-    .pip{ width:16px; aspect-ratio:1/1; border:1px solid var(--border); border-radius:6px; background: var(--tile-bg); }
+    .pip{ width:16px; aspect-ratio:1/1; border:1px solid var(--border); border-radius:6px; background: transparent;    }
     .pip.off{ opacity:.32; }
+    .lives .pip:not(.off){ background: var(--fg); }
 
     .score{ text-align:center; font-size:14px; color:var(--muted); }
 
@@ -436,8 +437,10 @@
       state.isAnimating = true;
       for(let i=0;i<5;i++){ state.current[i] = state.answerWord[i]; }
       renderAnswer();
-      answerRow.classList.remove('shake','jiggle','pop');
+      answerRow.classList.remove('shudder','jiggle','pop');
+      void answerRow.offsetWidth; // force reflow so the animation can restart
       answerRow.classList.add('shudder');
+
       setTimeout(()=>{
         answerRow.classList.remove('shudder');
         state.isAnimating = false;
