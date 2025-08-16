@@ -676,8 +676,8 @@ function onBackspace(opts = { animate: true }){
       }
 
       makeTap(shuffleBtn, onShuffle);
-      // Explicit opts so we always animate the bar on Clear
       makeTap(clearBtn,   () => onClearAll({ animate: true }));
+      makeTap(answerRow, () => onBackspace({ animate: true }));
 
     document.addEventListener('keydown', (e)=>{
       if(state.modalOpen || state.isAnimating) return;
