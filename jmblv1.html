@@ -1,311 +1,212 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>JUMBL</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-
   <style>
-    /* =========================
-       0) Base / Theme / Resets
-       ========================= */
-    :root {
-      color-scheme: light dark;
-      --vh: 100vh;
-      --vw: 100vw;
-
-      /* Light (flat) */
-      --bg:#FFFFFF; --fg:#000000; --muted:rgba(0,0,0,.60);
-      --track:rgba(0,0,0,.12); --tile-bg:#FFFFFF; --tile-fg:#000000;
-      --btn-bg:#FFFFFF; --btn-fg:#000000; --border:rgba(0,0,0,.15);
-      --shadow:none; --radius:12px;
-
-      --gap:10px;
-      --touch:56px;
-      --timer-h:14px;
-      --btn-pad:12px 16px;
-
-      /* Animation durations (auto-compress for reduced motion in JS) */
-      --dur-pop:200ms;
-      --dur-shake:220ms;
-      --dur-jiggle:260ms;
-      --dur-shudder:900ms;
-      --dur-press:100ms;
+    /* ------------------------------------------------------
+       0) Base / Theme / Resets — flat, monochrome, no shadows
+       ------------------------------------------------------ */
+    :root{
+      color-scheme: light dark; /* keep system UI in sync */
+      /* Light (default) */
+      --bg:#FFFFFF; --fg:#000000; --muted:rgba(0,0,0,.60); --track:rgba(0,0,0,.12);
+      --tile-bg:#FFFFFF; --tile-fg:#000000; --btn-bg:#FFFFFF; --btn-fg:#000000;
+      --border:rgba(0,0,0,.15); --radius:12px;
+      /* layout clamps */
+      --maxw:600px; /* app max width */
+      --gap:10px;   /* tile/bank gap */
+    }
+    html.dark{
+      /* Dark */
+      --bg:#000000; --fg:#FFFFFF; --muted:rgba(255,255,255,.70); --track:rgba(255,255,255,.15);
+      --tile-bg:#000000; --tile-fg:#FFFFFF; --btn-bg:#000000; --btn-fg:#FFFFFF;
+      --border:rgba(255,255,255,.20);
     }
 
-    html.dark {
-      /* Dark (flat) */
-      --bg:#000000; --fg:#FFFFFF; --muted:rgba(255,255,255,.70);
-      --track:rgba(255,255,255,.15); --tile-bg:#000000; --tile-fg:#FFFFFF;
-      --btn-bg:#000000; --btn-fg:#FFFFFF; --border:rgba(255,255,255,.20);
-      --shadow:none; --radius:12px;
-    }
+    *, *::before, *::after{ box-sizing: border-box; }
+    html, body{ height:100%; }
+    body{ margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--fg); -webkit-text-size-adjust:100%; }
+    :focus{ outline: auto; }
+    :focus:not(:focus-visible){ outline: none; }
+    a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    button{ font:inherit; color:inherit; background:var(--btn-bg); border:1px solid var(--border); border-radius: var(--radius); padding:.75rem 1rem; cursor:pointer; }
+    button:disabled{ opacity:.35; cursor: default; }
 
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      -webkit-tap-highlight-color: transparent; /* retain focus outlines */
-    }
-
-    /* App wrapper – clamp to visual viewport and max 600px width */
-    .app-shell {
+    /* ------------------------------
+       1) App shell & safe-area insets
+       ------------------------------ */
+    .app{
+      width: min(var(--vw, 100vw), var(--maxw));
       height: 100dvh;
-      min-height: 100dvh;
-      overflow: hidden;
+      margin: 0 auto;
+      display:flex; flex-direction:column;
+      padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 18px);
+      overflow: hidden; /* no scroll bounce */
       overscroll-behavior: none;
-      padding-top: calc(env(safe-area-inset-top) + 16px);
-      padding-bottom: calc(env(safe-area-inset-bottom) + 18px);
-      display: grid;
-      place-items: start center;
+      gap: 12px;
     }
 
-    .app {
-      width: min(var(--vw, 100vw), 600px);
-      padding: 12px 16px 24px;
-      display: grid;
-      grid-auto-rows: min-content;
-      row-gap: 16px;
+    /* ------------------------------
+       2) Header (3-col grid)
+       ------------------------------ */
+    .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
+    .title{ text-align:center; font-weight:700; letter-spacing:.12em; }
+    .theme-wrap{ justify-self:end; }
+    .icon{ width:22px; height:22px; display:block; }
+    .icon svg{ width:100%; height:100%; display:block; }
+
+    /* ------------------------------
+       3) Lives, Score, Timer
+       ------------------------------ */
+    .lives{ display:flex; justify-content:center; gap:8px; }
+    .pip{ width:16px; aspect-ratio:1/1; border:1px solid var(--border); border-radius:6px; background: var(--tile-bg); }
+    .pip.off{ opacity:.32; }
+
+    .score{ text-align:center; font-size:14px; color:var(--muted); }
+
+    .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
+    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
+    .timer-fill{ position:absolute; inset:0; transform-origin:right center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
+
+    /* ------------------------------
+       4) Squares: Answer row & Letter bank
+       ------------------------------ */
+    .row, .bank{ display:grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
+    .tile, .btn-letter{
+      aspect-ratio:1/1;
+      min-inline-size:56px; /* touch target */
+      border:1px solid var(--border); border-radius: var(--radius);
+      background: var(--tile-bg); color:var(--tile-fg);
+      display:grid; place-items:center; font-weight:700; font-size: clamp(18px, 7vw, 28px);
+      user-select:none;
+    }
+    .tile{ background:var(--tile-bg); }
+    .tile.empty{ color: var(--muted); }
+    .btn-letter{ background:var(--btn-bg); }
+    .btn-letter[aria-pressed="true"], .btn-letter.used{ opacity:.32; }
+
+    /* ------------------------------
+       5) Controls
+       ------------------------------ */
+    .controls{ display:flex; justify-content:center; gap:12px; }
+    .press{ transform: scale(.96); transition: transform 120ms ease; }
+
+    /* ------------------------------
+       6) Spacer to aid tall screens
+       ------------------------------ */
+    .spacer{ flex:1 1 auto; }
+
+    /* ------------------------------
+       7) Animations (motion-only) & reduced-motion
+       ------------------------------ */
+    @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+    @keyframes jiggle{ 0%,100%{ transform:rotate(0) } 25%{ transform:rotate(-2deg) } 75%{ transform:rotate(2deg) } }
+    @keyframes shudder{ 0%,100%{transform:translateY(0)} 25%{transform:translateY(-3px)} 50%{transform:translateY(3px)} 75%{transform:translateY(-2px)} }
+    @keyframes pop{ 0%{ transform:scale(1) } 50%{ transform:scale(1.06) } 100%{ transform:scale(1) } }
+
+    .shake{ animation: shake .22s linear; }
+    .jiggle{ animation: jiggle .26s ease-in-out; }
+    .shudder{ animation: shudder .8s ease-in-out; }
+    .pop{ animation: pop .6s ease; }
+
+    @media (prefers-reduced-motion: reduce){
+      .shake, .jiggle, .shudder, .pop{ animation-duration: .01s; }
+      .timer-fill{ transition: none; }
     }
 
-    /* 1) Header (3-col grid) */
-    .header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-    }
-    .header .spacer { justify-self: start; }
-    .header h1 {
-      margin: 0;
-      font-size: 22px;
-      letter-spacing: 0.1em;
-      text-align: center;
-    }
-    .theme-toggle {
-      justify-self: end;
-      display: inline-grid;
-      place-items: center;
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 6px;
-      line-height: 0;
-      cursor: pointer;
-      transition: transform var(--dur-press);
-    }
-    .theme-toggle:active { transform: scale(0.96); }
-    .theme-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+    /* ------------------------------
+       8) Modals (Intro, Game Over, Loading/Retry)
+       ------------------------------ */
+    .overlay{ position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; }
+    .overlay[aria-hidden="false"]{ display:block; }
+    .dialog{ position:fixed; inset:0; display:grid; place-items:center; pointer-events:none; }
+    .dialog[aria-hidden="false"]{ pointer-events:auto; }
+    .card{ width:min(92vw, 520px); background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow:none; }
+    .card h2{ margin:0 0 10px; letter-spacing:.06em; }
+    .card p{ margin:.5rem 0; color:var(--muted); }
+    .card .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
 
-    /* 2) Lives row */
-    .lives {
-      display: grid;
-      grid-auto-flow: column;
-      justify-content: center;
-      gap: 8px;
-    }
-    .life {
-      width: 24px; height: 24px; border-radius: 8px;
-      background: var(--tile-bg);
-      border: 1px solid var(--border);
-    }
-    .life.off { opacity: .3; }
-
-    /* 3) Score label */
-    .score { text-align: center; font-size: 14px; color: var(--muted); }
-
-    /* 4) Timer card – drains right → left */
-    .timer {
-      border: 1px solid var(--border);
-      border-radius: 9999px;
-      background: var(--track);
-      height: var(--timer-h);
-      position: relative;
-      overflow: hidden;
-    }
-    .timer-fill {
-      position: absolute;
-      right: 0; top: 0; bottom: 0;
-      width: 100%;
-      background: var(--fg);
-      transition: width 100ms linear;
-    }
-
-    /* 5) Rows: Answer (top) & Bank (below) */
-    .grid-5 {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: var(--gap);
-    }
-    .tile, .bank-btn {
-      aspect-ratio: 1 / 1;
-      min-width: var(--touch);
-      min-height: var(--touch);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      display: grid;
-      place-items: center;
-      background: var(--tile-bg);
-      color: var(--tile-fg);
-      user-select: none;
-    }
-    .tile {
-      font-weight: 600;
-      font-size: 22px;
-    }
-    .tile.empty { opacity: .6; }
-    .bank {
-      margin-top: 2px;
-    }
-    .bank-btn {
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-      font-weight: 700;
-      font-size: 20px;
-      cursor: pointer;
-      transition: transform var(--dur-press);
-    }
-    .bank-btn:disabled { opacity: .35; cursor: default; }
-    .bank-btn:active { transform: scale(0.96); }
-    .bank-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-
-    /* 6) Controls */
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--gap);
-      margin-top: 2px;
-    }
-    .btn {
-      background: var(--btn-bg);
-      color: var(--btn-fg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: var(--btn-pad);
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform var(--dur-press);
-    }
-    .btn:active { transform: scale(0.96); }
-    .btn:disabled { opacity: .35; cursor: default; }
-    .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-
-    .spacer { height: 8px; }
-
-    /* 7) Animations (motion-only) */
-    @keyframes pop { from { transform: scale(0.95); } to { transform: scale(1); } }
-    .pop { animation: pop var(--dur-pop) ease-out; }
-
-    @keyframes shake { 0%,100%{transform: translateX(0)} 25%{transform: translateX(-6px)} 75%{transform: translateX(6px)} }
-    .shake { animation: shake var(--dur-shake) ease-in-out; }
-
-    @keyframes jiggle { 0%,100%{transform: rotate(0)} 25%{transform: rotate(-2.5deg)} 75%{transform: rotate(2.5deg)} }
-    .jiggle { animation: jiggle var(--dur-jiggle) ease-in-out; }
-
-    @keyframes shudder { 0%,100%{transform: translateY(0)} 20%{transform: translateY(-2px)} 40%{transform: translateY(2px)} 60%{transform: translateY(-2px)} 80%{transform: translateY(2px)} }
-    .shudder { animation: shudder var(--dur-shudder) ease-in-out; }
-
-    /* 8) Modals (Loading/Retry, Intro/Rules, Game Over) */
-    .overlay {
-      position: fixed; inset: 0;
-      background: color-mix(in oklab, var(--bg), transparent 30%);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .overlay.show { display: flex; }
-    .dialog {
-      width: min(480px, 92vw);
-      background: var(--bg);
-      color: var(--fg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 18px 18px 16px;
-      display: grid; gap: 12px;
-    }
-    .dialog h2 { margin: 0; font-size: 18px; letter-spacing: .06em; }
-    .dialog p { margin: 0; color: var(--muted); font-size: 14px; }
-    .dialog .actions { display: grid; grid-auto-flow: column; gap: 10px; justify-content: end; margin-top: 6px; }
-    .sr-only {
-      position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
-    }
-    /* Visually dim/disable background when modal shown */
-    .blocked { pointer-events: none; user-select: none; }
+    /* ------------------------------
+       9) Visually-hidden for a11y
+       ------------------------------ */
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <main class="app" id="app" aria-live="polite">
-      <!-- Header -->
-      <div class="header" aria-label="Header">
-        <div class="spacer"></div>
-        <h1>JUMBL</h1>
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
-          <!-- Inline SVG sun/moon; swapped by JS -->
-          <svg id="iconSun" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a1 1 0 0 0 1-1V2a1 1 0 1 0-2 0v1.5a1 1 0 0 0 1 1Zm0 17a1 1 0 0 0-1 1V24a1 1 0 1 0 2 0v-1.5a1 1 0 0 0-1-1ZM4.5 12a1 1 0 0 0-1-1H2a1 1 0 1 0 0 2h1.5a1 1 0 0 0 1-1Zm18 0a1 1 0 0 0 1-1V10a1 1 0 1 0-2 0v1a1 1 0 0 0 1 1ZM5.76 6.17a1 1 0 0 0 1.41 0l1.06-1.06a1 1 0 1 0-1.41-1.41L5.76 4.76a1 1 0 0 0 0 1.41Zm11.31 11.31a1 1 0 0 0-1.41 0l-1.06 1.06a1 1 0 1 0 1.41 1.41l1.06-1.06a1 1 0 0 0 0-1.41ZM6.17 18.24a1 1 0 0 0 0-1.41L5.11 15.76a1 1 0 1 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41 0Zm11.31-11.31a1 1 0 0 0 0 1.41l1.06 1.06a1 1 0 1 0 1.41-1.41L18.89 6.17a1 1 0 0 0-1.41 0ZM12 7.25A4.75 4.75 0 1 0 16.75 12 4.76 4.76 0 0 0 12 7.25Z"/></svg>
-          <svg id="iconMoon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="display:none;"><path d="M21.64 13a9 9 0 1 1-10.63-10.6 1 1 0 0 1 1.06.27A7 7 0 0 0 22 12a7.09 7.09 0 0 0-.26 1 1 1 0 0 1-.1.39Z"/></svg>
+  <div id="app" class="app" aria-live="polite">
+    <!-- Header -->
+    <header class="header">
+      <div></div>
+      <div class="title" aria-hidden="true">JUMBL</div>
+      <div class="theme-wrap">
+        <button id="themeBtn" class="icon" aria-label="Toggle theme" title="Toggle theme">
+          <!-- default sun (monochrome, symmetric) -->
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <g>
+              <line x1="12" y1="1.5" x2="12" y2="4.5"></line>
+              <line x1="12" y1="19.5" x2="12" y2="22.5"></line>
+              <line x1="1.5" y1="12" x2="4.5" y2="12"></line>
+              <line x1="19.5" y1="12" x2="22.5" y2="12"></line>
+              <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"></line>
+              <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"></line>
+              <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"></line>
+              <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"></line>
+            </g>
+          </svg>
         </button>
       </div>
+    </header>
 
-      <!-- Lives -->
-      <div class="lives" id="lives" aria-label="Lives"></div>
+    <!-- Lives -->
+    <div id="lives" class="lives" aria-label="Lives" aria-live="polite"></div>
+    <!-- Score -->
+    <div id="score" class="score" aria-live="polite">Score: 0</div>
 
-      <!-- Score -->
-      <div class="score" id="score" aria-label="Score">Score: 0</div>
-
-      <!-- Timer -->
-      <div class="timer" id="timer"
-           role="progressbar"
-           aria-label="Time remaining (seconds)"
-           aria-valuemin="0" aria-valuemax="25" aria-valuenow="25">
-        <div class="timer-fill" id="timerFill" style="width:100%;"></div>
+    <!-- Timer -->
+    <section class="timer-card">
+      <div id="timerRail" class="timer-rail" role="progressbar" aria-label="Time remaining (seconds)" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25">
+        <div id="timerFill" class="timer-fill"></div>
       </div>
+      <span id="srSeconds" class="sr-only" aria-live="polite"></span>
+    </section>
 
-      <!-- Answer row -->
-      <div class="grid-5" id="answerRow" aria-label="Your guess"></div>
+    <!-- Answer row above Letter bank (strict) -->
+    <section id="answerRow" class="row" aria-label="Your guess"></section>
+    <section id="bank" class="bank" aria-label="Letter bank"></section>
 
-      <!-- Letter bank -->
-      <div class="grid-5 bank" id="bank" aria-label="Letter bank"></div>
+    <!-- Controls -->
+    <div class="controls">
+      <button id="shuffleBtn" type="button" aria-label="Shuffle letters">Shuffle</button>
+      <button id="clearBtn" type="button" aria-label="Clear all">Clear</button>
+    </div>
 
-      <!-- Controls -->
-      <div class="controls">
-        <button class="btn" id="btnShuffle" type="button">Shuffle</button>
-        <button class="btn" id="btnClear" type="button">Clear</button>
-      </div>
+    <div class="spacer" aria-hidden="true"></div>
 
-      <div class="spacer" aria-hidden="true"></div>
-    </main>
+    <!-- A11y announcer for granular updates (letters placed, etc.) -->
+    <div id="announcer" class="sr-only" aria-live="polite"></div>
   </div>
 
-  <!-- Hidden live region for countdown + status messages -->
-  <div id="live" class="sr-only" aria-live="polite"></div>
-
-  <!-- Modal overlay -->
-  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
-    <div class="dialog" id="dialog" tabindex="-1">
-      <h2 id="dialogTitle">Loading…</h2>
-      <p id="dialogBody">Fetching…</p>
-      <div class="actions" id="dialogActions">
-        <!-- Buttons injected per modal state -->
-      </div>
+  <!-- Overlay + Dialog (reused for all modals) -->
+  <div id="overlay" class="overlay" aria-hidden="true"></div>
+  <div id="dialog" class="dialog" aria-hidden="true" aria-modal="true" role="dialog" aria-labelledby="dialogTitle">
+    <div class="card" role="document">
+      <h2 id="dialogTitle"></h2>
+      <div id="dialogBody"></div>
+      <div class="actions" id="dialogActions"></div>
     </div>
   </div>
 
   <script>
-  (() => {
+  (()=>{
     "use strict";
 
-    /* =========================
+    /* ------------------------------
        1) Constants / State
-       ========================= */
+       ------------------------------ */
     const COUNTDOWN_SECONDS = 25;
     const STARTING_LIVES = 3;
     const TICK_MS = 100;
@@ -313,534 +214,447 @@
     let ANSWER_POOL = [];
     let GUESSES_SET = new Set();
 
-    /** Authoritative state */
-    let answerWord = "";
-    /** @type {{ch:string, used:boolean}[]} */
-    let bank = [];
-    /** @type {string[]} */
-    let current = ["","","","",""];
-    /** @type {(number|null)[]} */
-    let placedIndex = [null,null,null,null,null];
+    const state = {
+      answerWord: "",
+      bank: /** @type {{ch:string, used:boolean}[]} */([]),
+      current: ["","","","",""],
+      placedIndex: [null,null,null,null,null],
+      lives: STARTING_LIVES,
+      score: 0,
+      runStartAt: 0,
+      deadlineAt: 0,
+      timerHandle: null,
+      isAnimating: false,
+      modalOpen: false,
+    };
 
-    let lives = STARTING_LIVES;
-    let score = 0;
-    let runStartAt = 0;
-    let deadlineAt = 0;
-    let tickHandle = null;
-    let lastAnnounceSec = null;
-    let isAnimating = false;
-    let anyModalOpen = false;
+    /* ------------------------------
+       2) DOM helpers
+       ------------------------------ */
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const app = $("#app");
+    const livesEl = $("#lives");
+    const scoreEl = $("#score");
+    const timerRail = $("#timerRail");
+    const timerFill = $("#timerFill");
+    const srSeconds = $("#srSeconds");
+    const answerRow = $("#answerRow");
+    const bankRow = $("#bank");
+    const announcer = $("#announcer");
+    const shuffleBtn = $("#shuffleBtn");
+    const clearBtn = $("#clearBtn");
 
-    /* Reduced motion handling */
-    const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
-    if (prefersReduced) {
-      document.documentElement.style.setProperty("--dur-pop", "60ms");
-      document.documentElement.style.setProperty("--dur-shake", "60ms");
-      document.documentElement.style.setProperty("--dur-jiggle", "60ms");
-      document.documentElement.style.setProperty("--dur-shudder", "120ms");
+    const overlay = $("#overlay");
+    const dialog = $("#dialog");
+    const dialogTitle = $("#dialogTitle");
+    const dialogBody = $("#dialogBody");
+    const dialogActions = $("#dialogActions");
+
+    /* ------------------------------
+       3) Viewport var --vw updates
+       ------------------------------ */
+    function setVW(){
+      const w = (window.visualViewport ? visualViewport.width : window.innerWidth) || window.innerWidth;
+      document.documentElement.style.setProperty('--vw', w + 'px');
     }
-
-    /* =========================
-       2) DOM Refs
-       ========================= */
-    const elApp = document.getElementById("app");
-    const elLives = document.getElementById("lives");
-    const elScore = document.getElementById("score");
-    const elTimer = document.getElementById("timer");
-    const elTimerFill = document.getElementById("timerFill");
-    const elAnswer = document.getElementById("answerRow");
-    const elBank = document.getElementById("bank");
-    const elShuffle = document.getElementById("btnShuffle");
-    const elClear = document.getElementById("btnClear");
-    const elLive = document.getElementById("live");
-    const overlay = document.getElementById("overlay");
-    const dialog = document.getElementById("dialog");
-    const dialogTitle = document.getElementById("dialogTitle");
-    const dialogBody = document.getElementById("dialogBody");
-    const dialogActions = document.getElementById("dialogActions");
-    const themeToggle = document.getElementById("themeToggle");
-    const iconSun = document.getElementById("iconSun");
-    const iconMoon = document.getElementById("iconMoon");
-
-    /* =========================
-       3) Theme (persist)
-       ========================= */
-    const THEME_KEY = "jumbl-theme";
-    function applyTheme(theme) {
-      const dark = theme === "dark";
-      document.documentElement.classList.toggle("dark", dark);
-      // swap icons
-      iconSun.style.display = dark ? "none" : "";
-      iconMoon.style.display = dark ? "" : "none";
-      try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    setVW();
+    if(window.visualViewport){
+      visualViewport.addEventListener('resize', setVW);
+      visualViewport.addEventListener('scroll', setVW);
     }
-    function initTheme() {
-      let theme = "light";
-      try {
-        const saved = localStorage.getItem(THEME_KEY);
-        if (saved === "light" || saved === "dark") theme = saved;
-        else {
-          const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-          theme = prefersDark ? "dark" : "light";
-        }
-      } catch {}
-      applyTheme(theme);
-    }
-    themeToggle.addEventListener("click", () => {
-      const next = document.documentElement.classList.contains("dark") ? "light" : "dark";
-      applyTheme(next);
-    });
-    initTheme();
+    window.addEventListener('orientationchange', setVW);
+    window.addEventListener('resize', setVW);
+    window.addEventListener('pageshow', setVW);
 
-    /* =========================
-       4) VisualViewport vars
-       ========================= */
-    function setViewportVars() {
-      const vv = window.visualViewport;
-      const w = vv?.width ?? window.innerWidth;
-      const h = vv?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty("--vw", w + "px");
-      document.documentElement.style.setProperty("--vh", h + "px");
-    }
-    setViewportVars();
-    const vv = window.visualViewport;
-    if (vv) {
-      vv.addEventListener("resize", setViewportVars);
-      vv.addEventListener("scroll", setViewportVars);
-    }
-    window.addEventListener("orientationchange", setViewportVars);
-    window.addEventListener("resize", setViewportVars);
-    window.addEventListener("pageshow", setViewportVars);
-
-    /* =========================
-       5) Modals (overlay)
-       ========================= */
-    function openModal(kind, opts={}) {
-      anyModalOpen = true;
-      overlay.classList.add("show");
-      elApp.classList.add("blocked");
-      dialogActions.innerHTML = "";
-      dialog.removeAttribute("inert");
-
-      if (kind === "loading") {
-        dialogTitle.textContent = "Loading word lists…";
-        dialogBody.textContent = opts.message ?? "Fetching…";
-        const btn = mkButton("Retry", () => { loadWordLists(); }, true);
-        btn.disabled = true; // enabled on error
-        btn.id = "btnRetry";
-        dialogActions.append(btn);
-      } else if (kind === "error") {
-        dialogTitle.textContent = "Loading word lists…";
-        dialogBody.textContent = opts.message ?? "Trouble loading word lists.";
-        const btn = mkButton("Retry", () => { loadWordLists(); }, true);
-        btn.id = "btnRetry";
-        dialogActions.append(btn);
-      } else if (kind === "intro") {
-        dialogTitle.textContent = "RULES";
-        dialogBody.innerHTML = `
-          <p>Un-JUMBL the letters to make a 5-letter word.</p>
-          <p>Beat the clock to increase your score and refill the timer.</p>
-          <p>If the timer hits zero, you lose a life.</p>
-          <p>25 seconds per word • 3 lives</p>
-          <p>Highest score wins.</p>
-        `;
-        const btn = mkButton("Play", () => { closeModal(); startRun(); }, true);
-        dialogActions.append(btn);
-      } else if (kind === "gameover") {
-        dialogTitle.textContent = "GAME OVER";
-        const elapsed = formatMMSS(Math.max(0, Math.floor((performance.now() - runStartAt)/1000)));
-        dialogBody.textContent = `${score} words in ${elapsed}`;
-        const btn = mkButton("Again", () => { closeModal(); startRun(); }, true);
-        dialogActions.append(btn);
+    /* ------------------------------
+       4) Theme (persist localStorage)
+       ------------------------------ */
+    const THEME_KEY = 'jumbl-theme';
+    function applyTheme(t){ document.documentElement.classList.toggle('dark', t === 'dark'); updateThemeIcon(); }
+    function getSystemTheme(){ return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+    function initTheme(){ applyTheme(localStorage.getItem(THEME_KEY) || getSystemTheme()); }
+    function toggleTheme(){ const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light'); updateThemeIcon(); }
+    function updateThemeIcon(){
+      const isDark = document.documentElement.classList.contains('dark');
+      const svg = $("#themeIcon");
+      if(!svg) return;
+      // swap between sun and moon (monochrome)
+      if(isDark){
+        svg.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+      }else{
+        svg.innerHTML = '<circle cx="12" cy="12" r="4"></circle>'+
+                         '<line x1="12" y1="1.5" x2="12" y2="4.5"></line>'+
+                         '<line x1="12" y1="19.5" x2="12" y2="22.5"></line>'+
+                         '<line x1="1.5" y1="12" x2="4.5" y2="12"></line>'+
+                         '<line x1="19.5" y1="12" x2="22.5" y2="12"></line>'+
+                         '<line x1="4.22" y1="4.22" x2="6.34" y2="6.34"></line>'+
+                         '<line x1="17.66" y1="17.66" x2="19.78" y2="19.78"></line>'+
+                         '<line x1="4.22" y1="19.78" x2="6.34" y2="17.66"></line>'+
+                         '<line x1="17.66" y1="6.34" x2="19.78" y2="4.22"></line>';
       }
-      // Focus the first action
-      setTimeout(() => {
-        (dialogActions.querySelector("button") ?? dialog).focus();
-      }, 0);
     }
+    $("#themeBtn").addEventListener('click', toggleTheme);
 
-    function closeModal() {
-      anyModalOpen = false;
-      overlay.classList.remove("show");
-      elApp.classList.remove("blocked");
-      dialog.setAttribute("inert",""); // lightweight guard
-    }
+    /* ------------------------------
+       5) Utilities
+       ------------------------------ */
+    const randInt = n => Math.floor(Math.random()*n);
+    function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j = randInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
-    function mkButton(label, onClick, primary=false) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "btn";
-      b.textContent = label;
-      if (primary) b.style.fontWeight = "700";
-      b.addEventListener("click", onClick);
-      return b;
-    }
-
-    // Trap Esc & basic tab loop
-    overlay.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { closeModal(); }
-      if (e.key === "Tab") {
-        const focusables = overlay.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
-        if (!focusables.length) return;
-        const first = focusables[0], last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
-        else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
-      }
-    });
-
-    /* =========================
-       6) Fetch + Parse Lists
-       ========================= */
-    function normalizeList(text) {
+    function normalizeList(text){
       // strip BOM
-      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-      const lines = text.split(/\r\n?|\n/).map(s => s.trim().toUpperCase());
-      const out = [];
+      if(text.charCodeAt(0) === 0xFEFF){ text = text.slice(1); }
       const seen = new Set();
-      for (const s of lines) {
-        if (/^[A-Z]{5}$/.test(s) && !seen.has(s)) {
-          seen.add(s);
-          out.push(s);
-        }
-      }
+      const out = [];
+      text.split(/\r\n?|\n/).forEach(line=>{
+        const s = line.trim().toUpperCase();
+        if(/^[A-Z]{5}$/.test(s) && !seen.has(s)){ seen.add(s); out.push(s); }
+      });
       return out;
     }
 
-    async function loadWordLists() {
-      openModal("loading", {message: "Fetching…"});
-      const btnRetry = document.getElementById("btnRetry");
-
-      try {
-        const [aRes, gRes] = await Promise.all([
-          fetch("answers.txt", {cache: "no-store"}),
-          fetch("guesses.txt", {cache: "no-store"}),
-        ]);
-        if (!aRes.ok || !gRes.ok) throw new Error("Network error");
-
-        const [aTxt, gTxt] = await Promise.all([aRes.text(), gRes.text()]);
-        const answers = normalizeList(aTxt);
-        const guesses = normalizeList(gTxt);
-
-        if (!answers.length || !guesses.length) {
-          if (btnRetry) btnRetry.disabled = false;
-          openModal("error", {message: "Empty list(s). Please check files and Retry."});
-          return;
-        }
-
-        // Build sets and validate: ANSWER_POOL ⊆ GUESSES_SET
-        const gset = new Set(guesses);
-        const missing = answers.find(w => !gset.has(w));
-        if (missing) {
-          if (btnRetry) btnRetry.disabled = false;
-          openModal("error", {message: "answers.txt must be a subset of guesses.txt. Please fix and Retry."});
-          return;
-        }
-
-        ANSWER_POOL = answers.slice(0);
-        GUESSES_SET = gset;
-
-        // Success → Intro
-        openModal("intro");
-      } catch (err) {
-        if (btnRetry) btnRetry.disabled = false;
-        openModal("error", {message: "Trouble loading word lists. Check server & files, then Retry."});
-      }
+    function pickAnswer(){
+      return ANSWER_POOL[randInt(ANSWER_POOL.length)];
     }
 
-    /* =========================
-       7) Game Core
-       ========================= */
-    function startRun() {
-      lives = STARTING_LIVES;
-      score = 0;
-      runStartAt = performance.now();
+    function buildBankFrom(word){
+      const arr = word.split("").map(ch=>({ ch, used:false }));
+      return shuffleInPlace(arr);
+    }
+
+    function secondsSince(ts){ return Math.floor((Date.now()-ts)/1000); }
+    function fmtMMSS(total){ const m = Math.floor(total/60).toString().padStart(2,'0'); const s = (total%60).toString().padStart(2,'0'); return `${m}:${s}`; }
+
+    /* ------------------------------
+       6) Rendering
+       ------------------------------ */
+    function renderLives(){
+      const frag = document.createDocumentFragment();
+      for(let i=0;i<STARTING_LIVES;i++){
+        const d = document.createElement('div');
+        d.className = 'pip' + (i < state.lives ? '' : ' off');
+        frag.appendChild(d);
+      }
+      livesEl.innerHTML = '';
+      livesEl.appendChild(frag);
+      livesEl.setAttribute('aria-label', `Lives: ${state.lives} of ${STARTING_LIVES}`);
+    }
+
+    function renderScore(){ scoreEl.textContent = `Score: ${state.score}`; }
+
+    function renderTimer(){
+      const now = performance.now();
+      const remain = clamp(state.deadlineAt - now, 0, COUNTDOWN_SECONDS*1000);
+      const ratio = remain / (COUNTDOWN_SECONDS*1000);
+      timerFill.style.transform = `scaleX(${ratio})`; // right->left via transform-origin:right
+      const secs = Math.round(remain/1000);
+      timerRail.setAttribute('aria-valuenow', String(secs));
+      // Speak at most once per second
+      srSeconds.textContent = `${secs} seconds remaining`;
+    }
+
+    function renderAnswer(){
+      const frag = document.createDocumentFragment();
+      for(let i=0;i<5;i++){
+        const v = state.current[i] || '';
+        const d = document.createElement('div');
+        d.className = 'tile' + (v ? '' : ' empty');
+        d.textContent = v;
+        d.setAttribute('aria-label', v ? `Slot ${i+1}: ${v}` : `Slot ${i+1}: empty`);
+        frag.appendChild(d);
+      }
+      answerRow.innerHTML = '';
+      answerRow.appendChild(frag);
+    }
+
+    function renderBank(){
+      const frag = document.createDocumentFragment();
+      state.bank.forEach((b, idx)=>{
+        const btn = document.createElement('button');
+        btn.className = 'btn-letter';
+        btn.type = 'button';
+        btn.textContent = b.ch;
+        btn.disabled = b.used;
+        btn.setAttribute('aria-pressed', b.used ? 'true' : 'false');
+        btn.dataset.idx = String(idx);
+        frag.appendChild(btn);
+      });
+      bankRow.innerHTML = '';
+      bankRow.appendChild(frag);
+    }
+
+    function renderUI(){
       renderLives();
       renderScore();
+      renderTimer();
+      renderAnswer();
+      renderBank();
+    }
+
+    /* ------------------------------
+       7) Timer control
+       ------------------------------ */
+    function startTimer(){
+      stopTimer();
+      state.deadlineAt = performance.now() + COUNTDOWN_SECONDS*1000;
+      renderTimer();
+      state.timerHandle = setInterval(()=>{
+        renderTimer();
+        if(performance.now() >= state.deadlineAt){ onTimeout(); }
+      }, TICK_MS);
+    }
+    function stopTimer(){ if(state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; } }
+
+    /* ------------------------------
+       8) Core game flow
+       ------------------------------ */
+    function startRun(){
+      state.lives = STARTING_LIVES;
+      state.score = 0;
+      state.runStartAt = Date.now();
       nextWord(false);
     }
 
-    function nextWord(increment) {
-      if (increment) {
-        score++;
-        renderScore();
-      }
-      // pick random answer
-      answerWord = ANSWER_POOL[(Math.random()*ANSWER_POOL.length)|0];
-      bank = buildBankFrom(answerWord);
-      current = ["","","","",""];
-      placedIndex = [null,null,null,null,null];
-      isAnimating = false;
-      renderAnswer();
-      renderBank();
+    function nextWord(increment){
+      if(increment) state.score++;
+      state.answerWord = pickAnswer();
+      state.bank = buildBankFrom(state.answerWord);
+      state.current = ["","","","",""];
+      state.placedIndex = [null,null,null,null,null];
+      state.isAnimating = false;
+      renderUI();
       startTimer();
     }
 
-    function buildBankFrom(word) {
-      const arr = word.split("").map(ch => ({ch, used:false}));
-      // Fisher–Yates
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = (Math.random() * (i + 1)) | 0;
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    }
-
-    function renderLives() {
-      elLives.innerHTML = "";
-      for (let i=0;i<STARTING_LIVES;i++) {
-        const d = document.createElement("div");
-        d.className = "life" + (i < lives ? "" : " off");
-        d.setAttribute("aria-hidden","true");
-        elLives.appendChild(d);
-      }
-      elLives.setAttribute("aria-label", `Lives: ${lives} of ${STARTING_LIVES}`);
-    }
-
-    function renderScore() {
-      elScore.textContent = `Score: ${score}`;
-    }
-
-    function renderAnswer() {
-      elAnswer.innerHTML = "";
-      for (let i=0;i<5;i++) {
-        const d = document.createElement("div");
-        d.className = "tile" + (current[i] ? "" : " empty");
-        d.textContent = current[i] || "";
-        elAnswer.appendChild(d);
-      }
-    }
-
-    function renderBank() {
-      elBank.innerHTML = "";
-      bank.forEach((b, idx) => {
-        const btn = document.createElement("button");
-        btn.className = "bank-btn";
-        btn.type = "button";
-        btn.disabled = b.used;
-        btn.textContent = b.ch;
-        btn.addEventListener("click", () => onLetterTap(idx));
-        elBank.appendChild(btn);
-      });
-    }
-
-    function startTimer() {
+    function onTimeout(){
+      if(state.timerHandle === null) return; // already handled
       stopTimer();
-      deadlineAt = performance.now() + COUNTDOWN_SECONDS * 1000;
-      lastAnnounceSec = null;
-      updateTimer(); // initial paint
-      tickHandle = setInterval(updateTimer, TICK_MS);
-    }
-
-    function stopTimer() {
-      if (tickHandle) {
-        clearInterval(tickHandle);
-        tickHandle = null;
-      }
-    }
-
-    function updateTimer() {
-      const now = performance.now();
-      const remainMs = Math.max(0, deadlineAt - now);
-      const pct = (remainMs / (COUNTDOWN_SECONDS * 1000)) * 100;
-      elTimerFill.style.width = pct + "%";
-
-      const sec = Math.ceil(remainMs / 1000);
-      elTimer.setAttribute("aria-valuenow", String(sec));
-      if (lastAnnounceSec !== sec && sec >= 0) {
-        lastAnnounceSec = sec;
-        if (sec % 1 === 0) {
-          elLive.textContent = `${sec} seconds remaining`;
-        }
-      }
-
-      if (remainMs <= 0) {
-        stopTimer();
-        onTimeout();
-      }
-    }
-
-    function onTimeout() {
-      if (isAnimating) return;
-      lives--;
+      state.lives = Math.max(0, state.lives - 1);
       renderLives();
-      // Reveal full answer & shudder (motion only)
-      revealAndShudder(answerWord).then(() => {
-        if (lives > 0) {
-          nextWord(false);
-        } else {
-          gameOver();
-        }
-      });
-    }
-
-    async function revealAndShudder(word) {
-      isAnimating = true;
-      // Fill all slots
-      current = word.split("");
-      placedIndex = [null,null,null,null,null]; // clear linkages; bank will rebuild nextWord
+      // Reveal the correct word in answer row, shudder, then advance or game over
+      state.isAnimating = true;
+      for(let i=0;i<5;i++){ state.current[i] = state.answerWord[i]; }
       renderAnswer();
-      // disable inputs (handled by isInputEnabled)
-      // Shudder
-      elAnswer.classList.remove("shudder");
-      void elAnswer.offsetWidth;
-      elAnswer.classList.add("shudder");
-      await waitMS(prefersReduced ? 120 : 900);
-      elAnswer.classList.remove("shudder");
-      isAnimating = false;
+      answerRow.classList.remove('shake','jiggle','pop');
+      answerRow.classList.add('shudder');
+      setTimeout(()=>{
+        answerRow.classList.remove('shudder');
+        state.isAnimating = false;
+        if(state.lives > 0){ nextWord(false); }
+        else{ gameOver(); }
+      }, 800);
     }
 
-    function evaluateGuess(guess) {
-      if (isAnimating) return;
-      if (GUESSES_SET.has(guess)) {
-        // Correct path
-        isAnimating = true;
-        stopTimer();
-        // Pop celebration
-        Array.from(elAnswer.children).forEach(tile => {
-          tile.classList.remove("pop");
-          void tile.offsetWidth;
-          tile.classList.add("pop");
-        });
-        setTimeout(() => {
-          isAnimating = false;
-          nextWord(true);
-        }, prefersReduced ? 80 : 600);
-      } else {
-        // Invalid path: shake + clear; no life loss; timer continues
-        isAnimating = true;
-        elAnswer.classList.remove("shake");
-        void elAnswer.offsetWidth;
-        elAnswer.classList.add("shake");
-        setTimeout(() => {
-          elAnswer.classList.remove("shake");
-          onClearAll();
-          isAnimating = false;
-        }, prefersReduced ? 60 : 220);
-      }
-    }
-
-    function autoSubmitIfFull() {
-      if (current.every(c => c)) {
-        evaluateGuess(current.join(""));
-      }
-    }
-
-    function firstEmptySlot() {
-      for (let i=0;i<5;i++) if (!current[i]) return i;
-      return -1;
-    }
-
-    function onLetterTap(bankIndex) {
-      if (!isInputEnabled()) return;
-      const b = bank[bankIndex];
-      if (!b || b.used) return;
-      const slot = firstEmptySlot();
-      if (slot === -1) return;
+    function onLetterTap(bankIndex){
+      if(state.isAnimating || state.modalOpen) return;
+      const idx = state.placedIndex.indexOf(null); // next empty slot
+      if(idx === -1) return; // full
+      const b = state.bank[bankIndex];
+      if(!b || b.used) return;
       b.used = true;
-      current[slot] = b.ch;
-      placedIndex[slot] = bankIndex;
-      // Pop the tile
-      const tile = elAnswer.children[slot];
-      if (tile) {
-        tile.classList.remove("pop");
-        void tile.offsetWidth;
-        tile.classList.add("pop");
-      }
-      renderBank();
+      state.current[idx] = b.ch;
+      state.placedIndex[idx] = bankIndex;
       renderAnswer();
+      renderBank();
+      announcer.textContent = `Placed ${b.ch} in slot ${idx+1}`;
+      // slot pop
+      answerRow.classList.remove('pop');
+      void answerRow.offsetWidth; // reflow to restart animation
+      answerRow.classList.add('pop');
       autoSubmitIfFull();
     }
 
-    function onShuffle() {
-      if (!isInputEnabled()) return;
-      // Shuffle only unused bank letters, keep used in place
-      const unusedPos = [];
-      const unusedLetters = [];
-      bank.forEach((b, idx) => { if (!b.used) { unusedPos.push(idx); unusedLetters.push(b.ch); }});
-      // Fisher–Yates on letters
-      for (let i = unusedLetters.length - 1; i > 0; i--) {
-        const j = (Math.random() * (i + 1)) | 0;
-        [unusedLetters[i], unusedLetters[j]] = [unusedLetters[j], unusedLetters[i]];
-      }
-      // Write back to those positions
-      unusedPos.forEach((pos, i) => { bank[pos].ch = unusedLetters[i]; });
-
-      // Jiggle animation on bank
-      elBank.classList.remove("jiggle");
-      void elBank.offsetWidth;
-      elBank.classList.add("jiggle");
-      setTimeout(() => elBank.classList.remove("jiggle"), prefersReduced ? 60 : 260);
-
+    function onShuffle(){
+      if(state.isAnimating || state.modalOpen) return;
+      // shuffle only unused letters
+      const unused = [];
+      const unusedIdx = [];
+      state.bank.forEach((b, i)=>{ if(!b.used){ unused.push(b); unusedIdx.push(i); } });
+      shuffleInPlace(unused);
+      unusedIdx.forEach((slot, j)=>{ state.bank[slot] = unused[j]; });
       renderBank();
+      bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
     }
 
-    function onClearAll() {
-      // Free all placed letters
-      for (let i=0;i<5;i++) {
-        const bi = placedIndex[i];
-        if (bi !== null) { bank[bi].used = false; }
-        current[i] = "";
-        placedIndex[i] = null;
+    function onClearAll(){
+      if(state.isAnimating || state.modalOpen) return;
+      for(let i=0;i<5;i++){
+        const bi = state.placedIndex[i];
+        if(bi !== null){ state.bank[bi].used = false; }
+        state.current[i] = "";
+        state.placedIndex[i] = null;
       }
-      renderBank();
       renderAnswer();
+      renderBank();
+      // shake to acknowledge clear
+      answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
     }
 
-    function gameOver() {
+    function autoSubmitIfFull(){
+      if(state.current.every(c=>c)){
+        evaluateGuess(state.current.join(''));
+      }
+    }
+
+    function evaluateGuess(guess){
+      if(GUESSES_SET.has(guess)){
+        // Correct (any real anagram in guesses.txt). Celebrate, advance, refill timer.
+        stopTimer();
+        state.isAnimating = true;
+        answerRow.classList.remove('pop'); void answerRow.offsetWidth; answerRow.classList.add('pop');
+        setTimeout(()=>{ state.isAnimating = false; nextWord(true); }, 600);
+      }else{
+        // Invalid: shake + clear; timer continues; no life loss.
+        answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
+        setTimeout(onClearAll, 220);
+      }
+    }
+
+    function gameOver(){
       stopTimer();
-      openModal("gameover");
+      showModal('GAME OVER',
+        `<p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>`,
+        [ {label:'Again', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]
+      );
     }
 
-    function isInputEnabled() {
-      return !anyModalOpen && !isAnimating;
-    }
-
-    function waitMS(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-    function formatMMSS(totalSec) {
-      const m = Math.floor(totalSec/60);
-      const s = totalSec%60;
-      return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
-    }
-
-    /* =========================
-       8) Keyboard Controls
-       ========================= */
-    window.addEventListener("keydown", (e) => {
-      if (anyModalOpen) return; // suppressed during modals
-      if (isAnimating) return;  // suppressed during animations
-
-      const key = e.key;
-      if (key === " " || key === "Spacebar") {
-        e.preventDefault();
-        onShuffle();
-        return;
-      }
-      if (key === "Backspace" || key === "Delete") {
-        e.preventDefault(); // avoid browser nav
-        onClearAll();
-        return;
-      }
-      if (/^[a-zA-Z]$/.test(key)) {
-        const ch = key.toUpperCase();
-        // place the LEFTMOST unused matching bank letter into next empty slot
-        const idx = bank.findIndex(b => !b.used && b.ch === ch);
-        if (idx !== -1) {
-          e.preventDefault();
-          onLetterTap(idx);
-        }
+    /* ------------------------------
+       9) Events — clicks & keyboard
+       ------------------------------ */
+    bankRow.addEventListener('click', (e)=>{
+      const t = e.target;
+      if(!(t instanceof HTMLElement)) return;
+      if(t.classList.contains('btn-letter')){
+        const idx = Number(t.dataset.idx);
+        onLetterTap(idx);
       }
     });
 
-    /* =========================
-       9) Wire up controls
-       ========================= */
-    elShuffle.addEventListener("click", onShuffle);
-    elClear.addEventListener("click", onClearAll);
+    shuffleBtn.addEventListener('click', ()=>{ bounce(shuffleBtn); onShuffle(); });
+    clearBtn.addEventListener('click', ()=>{ bounce(clearBtn); onClearAll(); });
 
-    /* =========================
-       10) Kickoff – load lists
-       ========================= */
+    function bounce(btn){
+      btn.classList.remove('press');
+      void btn.offsetWidth; // restart
+      btn.classList.add('press');
+      setTimeout(()=>btn.classList.remove('press'), 140);
+    }
+
+    document.addEventListener('keydown', (e)=>{
+      if(state.modalOpen || state.isAnimating) return;
+      const k = e.key;
+      if(k === ' '){ e.preventDefault(); onShuffle(); return; }
+      if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClearAll(); return; }
+      if(k.length === 1){
+        const ch = k.toUpperCase();
+        if(ch < 'A' || ch > 'Z') return;
+        // find leftmost matching UNUSED bank letter
+        const i = state.bank.findIndex(b => !b.used && b.ch === ch);
+        if(i !== -1){ onLetterTap(i); }
+      }
+    }, true);
+
+    /* ------------------------------
+       10) Modals (reusable) + focus mgmt
+       ------------------------------ */
+    let restoreFocusEl = null;
+    function showModal(title, bodyHTML, actions){
+      state.modalOpen = true;
+      overlay.setAttribute('aria-hidden','false');
+      dialog.setAttribute('aria-hidden','false');
+      dialogTitle.textContent = title;
+      dialogBody.innerHTML = bodyHTML;
+      dialogActions.innerHTML = '';
+      actions.forEach(a=>{
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = a.label;
+        if(a.isPrimary) b.autofocus = true;
+        b.addEventListener('click', a.action);
+        dialogActions.appendChild(b);
+      });
+      restoreFocusEl = document.activeElement;
+      const firstBtn = dialogActions.querySelector('button') || dialog.querySelector('button');
+      if(firstBtn) firstBtn.focus();
+      // basic trap
+      dialog.addEventListener('keydown', trapTab);
+      document.addEventListener('keydown', escClose);
+      app.setAttribute('aria-hidden','true');
+    }
+    function closeModal(){
+      state.modalOpen = false;
+      overlay.setAttribute('aria-hidden','true');
+      dialog.setAttribute('aria-hidden','true');
+      dialog.removeEventListener('keydown', trapTab);
+      document.removeEventListener('keydown', escClose);
+      app.removeAttribute('aria-hidden');
+      if(restoreFocusEl && restoreFocusEl.focus) restoreFocusEl.focus();
+    }
+    function trapTab(e){
+      if(e.key !== 'Tab') return;
+      const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if(!focusables.length) return;
+      const first = focusables[0]; const last = focusables[focusables.length-1];
+      if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+    function escClose(e){ if(e.key === 'Escape'){ closeModal(); } }
+
+    function showLoading(msg, canRetry){
+      const retryBtn = { label:'Retry', action:()=>{ closeModal(); loadWordLists(); }, isPrimary:true };
+      showModal('Loading word lists…', `<p>${msg}</p>`, canRetry ? [retryBtn] : []);
+    }
+
+    function showIntro(){
+      const body = `
+        <p>Un-JUMBL the letters to make a 5-letter word.</p>
+        <p>Beat the clock to increase your score and refill the timer.</p>
+        <p>If the timer hits zero, you lose a life.</p>
+        <p><strong>25 seconds</strong> per word • <strong>3 lives</strong></p>
+        <p>Highest score wins.</p>`;
+      showModal('RULES', body, [ {label:'Play', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]);
+    }
+
+    /* ------------------------------
+       11) Data loading & validation
+       ------------------------------ */
+    async function loadWordLists(){
+      showLoading('Fetching…', false);
+      try{
+        const ctrl = new AbortController();
+        const opts = { cache: 'no-store', signal: ctrl.signal };
+        const [aRes, gRes] = await Promise.all([
+          fetch('answers.txt', opts),
+          fetch('guesses.txt', opts)
+        ]);
+        if(!aRes.ok || !gRes.ok) throw new Error('Network error while fetching lists.');
+        const [aText, gText] = await Promise.all([aRes.text(), gRes.text()]);
+        const answers = normalizeList(aText);
+        const guesses = normalizeList(gText);
+        if(!answers.length || !guesses.length) throw new Error('One or both files are empty after parsing.');
+        // Build sets and validate subset
+        const gSet = new Set(guesses);
+        const missing = answers.filter(w => !gSet.has(w));
+        if(missing.length){
+          showModal('Error in word lists', `<p>All answers must also appear in <code>guesses.txt</code>.</p><p>Missing ${missing.length} entries. Example: <code>${missing.slice(0,5).join(', ')}</code></p>`, [ {label:'Retry', action:()=>{ closeModal(); loadWordLists(); }, isPrimary:true} ]);
+          return;
+        }
+        ANSWER_POOL = answers;
+        GUESSES_SET = gSet;
+        closeModal();
+        // After lists load, show Intro
+        showIntro();
+      }catch(err){
+        console.error(err);
+        showLoading('Error loading word lists. Please try again.', true);
+      }
+    }
+
+    /* ------------------------------
+       12) Boot
+       ------------------------------ */
+    initTheme();
     loadWordLists();
 
   })();
