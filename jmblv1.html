@@ -122,8 +122,8 @@
        ------------------------------ */
     .overlay{ position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; }
     .overlay[aria-hidden="false"]{ display:block; }
-    .dialog{ position:fixed; inset:0; display:grid; place-items:center; pointer-events:none; }
-    .dialog[aria-hidden="false"]{ pointer-events:auto; }
+    .dialog{ position:fixed; inset:0; display:none; place-items:center; }
+    .dialog[aria-hidden="false"]{ display:grid; pointer-events:auto; }
     .card{ width:min(92vw, 520px); background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow:none; }
     .card h2{ margin:0 0 10px; letter-spacing:.06em; }
     .card p{ margin:.5rem 0; color:var(--muted); }
