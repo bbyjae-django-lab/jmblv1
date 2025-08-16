@@ -458,6 +458,7 @@
       renderBank();
       announcer.textContent = `Placed ${b.ch} in slot ${idx+1}`;
       // slot pop
+      answerRow.classList.remove('shake'); // ensure no lingering shake
       answerRow.classList.remove('pop');
       void answerRow.offsetWidth; // reflow to restart animation
       answerRow.classList.add('pop');
@@ -495,6 +496,10 @@
       answerRow.classList.remove('shake');
       void answerRow.offsetWidth; // restart
       answerRow.classList.add('shake');
+      // remove .shake when it finishes so it can't "come back" after .pop ends
+      answerRow.addEventListener('animationend', (e)=>{
+        if (e.animationName === 'shake') answerRow.classList.remove('shake');
+      }, { once:true });
 
     }
 
@@ -517,6 +522,11 @@
         answerRow.classList.remove('shake');
         void answerRow.offsetWidth;
         answerRow.classList.add('shake');
+        // clean up .shake at the end so it doesn't persist
+        answerRow.addEventListener('animationend', (e)=>{
+          if (e.animationName === 'shake') answerRow.classList.remove('shake');
+        }, { once:true });
+
         setTimeout(onClearAll, 220);
       }
     }
