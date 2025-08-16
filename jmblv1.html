@@ -105,16 +105,14 @@
        ------------------------------ */
     @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
     @keyframes jiggle{ 0%,100%{ transform:rotate(0) } 25%{ transform:rotate(-2deg) } 75%{ transform:rotate(2deg) } }
-    @keyframes shudder{ 0%,100%{transform:translateY(0)} 25%{transform:translateY(-3px)} 50%{transform:translateY(3px)} 75%{transform:translateY(-2px)} }
     @keyframes pop{ 0%{ transform:scale(1) } 50%{ transform:scale(1.06) } 100%{ transform:scale(1) } }
 
     .shake{ animation: shake .22s linear; }
     .jiggle{ animation: jiggle .26s ease-in-out; }
-    .shudder{ animation: shudder .8s ease-in-out; }
     .pop{ animation: pop .6s ease; }
 
     @media (prefers-reduced-motion: reduce){
-      .shake, .jiggle, .shudder, .pop{ animation-duration: .01s; }
+      .shake, .jiggle, .pop{ animation-duration: .01s; }
       .timer-fill{ transition: none; }
     }
 
@@ -433,11 +431,11 @@
       stopTimer();
       state.lives = Math.max(0, state.lives - 1);
       renderLives();
-      // Reveal the correct word in answer row, shudder, then advance or game over
+      // Reveal the correct word in answer row, shake, then advance or game over
       state.isAnimating = true;
       for(let i=0;i<5;i++){ state.current[i] = state.answerWord[i]; }
       renderAnswer();
-      answerRow.classList.remove('shudder','jiggle','pop');
+      answerRow.classList.remove('jiggle','pop');
       answerRow.classList.add('shake');
       setTimeout(()=>{
         answerRow.classList.remove('shake');
@@ -463,6 +461,10 @@
       answerRow.classList.remove('pop');
       void answerRow.offsetWidth; // reflow to restart animation
       answerRow.classList.add('pop');
+      // remove .pop when that animation finishes so future .shake isn't overridden
+      answerRow.addEventListener('animationend', (e)=>{
+        if (e.animationName === 'pop') answerRow.classList.remove('pop');
+      }, { once:true });
       autoSubmitIfFull();
     }
 
@@ -488,8 +490,12 @@
       }
       renderAnswer();
       renderBank();
-      // shake to acknowledge clear
-      answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
+      // shake to acknowledge clear (ensure .pop isn't masking .shake)
+      answerRow.classList.remove('pop');
+      answerRow.classList.remove('shake');
+      void answerRow.offsetWidth; // restart
+      answerRow.classList.add('shake');
+
     }
 
     function autoSubmitIfFull(){
@@ -507,7 +513,10 @@
         setTimeout(()=>{ state.isAnimating = false; nextWord(true); }, 600);
       }else{
         // Invalid: shake + clear; timer continues; no life loss.
-        answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
+        answerRow.classList.remove('pop'); // ensure .shake is visible
+        answerRow.classList.remove('shake');
+        void answerRow.offsetWidth;
+        answerRow.classList.add('shake');
         setTimeout(onClearAll, 220);
       }
     }
