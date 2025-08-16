@@ -572,28 +572,36 @@
     }
 
     function evaluateGuess(guess){
-      if(GUESSES_SET.has(guess)){
-        // Correct: soft-pop the bar + pop each tile in sync
-        stopTimer();
-        state.isAnimating = true;
-        play(answerRow, 'pop-soft');
-        [...answerRow.children].forEach(el => play(el, 'pop'));
-        setTimeout(()=>{ state.isAnimating = false; nextWord(true); }, 600);
-      }
-      else{
-  // Invalid: shake, then clear after a guard timeout (older iOS sometimes drops animationend)
+  if (GUESSES_SET.has(guess)) {
+    // Correct: soft-pop the bar + pop each tile in sync
+    stopTimer();
+    state.isAnimating = true;
+    play(answerRow, 'pop-soft');
+    [...answerRow.children].forEach(el => play(el, 'pop'));
+    setTimeout(() => {
+      state.isAnimating = false;
+      nextWord(true);
+    }, 600);
+    return;
+  }
+
+  // Invalid: shake, then clear (with a guard for older iOS Safari)
   state.isAnimating = true;
   play(answerRow, 'shake');
-  setTimeout(()=>{
-    onClearAll({ animate:false });
+
+  const finish = () => {
+    answerRow.removeEventListener('animationend', finish);
+    onClearAll({ animate: false });
     state.isAnimating = false;
-  }, 240); // ~.22s shake + tiny buffer
+  };
+
+  // Prefer animationend, but add a tiny timeout in case it’s dropped
+  answerRow.addEventListener('animationend', finish, { once: true });
+  setTimeout(() => {
+    if (state.isAnimating) finish();
+  }, 260); // ~.22s shake + a small buffer
 }
 
-      };
-      answerRow.addEventListener('animationend', onEnd, { once:true });
-    }
-    }
 
     function gameOver(){
       stopTimer();
