@@ -347,7 +347,7 @@
       const now = performance.now();
       const remain = clamp(state.deadlineAt - now, 0, COUNTDOWN_SECONDS*1000);
       const ratio = remain / (COUNTDOWN_SECONDS*1000);
-      timerFill.style.transform = `scaleX(${ratio})`; // right->left via transform-origin:right
+      timerFill.style.transform = `scaleX(${ratio})`; // right->left via transform-origin:left
       const secs = Math.round(remain/1000);
       timerRail.setAttribute('aria-valuenow', String(secs));
       // Speak at most once per second
