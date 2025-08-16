@@ -43,10 +43,10 @@
       height: 100dvh;
       margin: 0 auto;
       display:flex; flex-direction:column;
-      padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 18px);
+      padding: calc(env(safe-area-inset-top) + 16px) 12px calc(env(safe-area-inset-bottom) + 18px);
       overflow: hidden; /* no scroll bounce */
       overscroll-behavior: none;
-      gap: 12px;
+      gap: 16px;
     }
 
     /* ------------------------------
@@ -81,10 +81,10 @@
     .row, .bank{ display:grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); }
     .tile, .btn-letter{
       aspect-ratio:1/1;
-      min-inline-size:56px; /* touch target */
+      min-inline-size:64px; /* touch target */
       border:1px solid var(--border); border-radius: var(--radius);
       background: var(--tile-bg); color:var(--tile-fg);
-      display:grid; place-items:center; font-weight:700; font-size: clamp(18px, 7vw, 28px);
+      display:grid; place-items:center; font-weight:900; font-size: clamp(22px, 8vw, 34px);
       user-select:none;
     }
     .tile{ background:var(--tile-bg); }
@@ -104,7 +104,22 @@
           .press{ transform: scale(.96); transition: transform 120ms ease; }
     .controls button{ font-weight:700; }
     .card .actions button{ font-weight:700; }
-
+    .theme-bottom{ display:flex; justify-content:center; }
+    #themeBtn{
+      width:100%;
+      max-width:240px;
+      padding:12px 0;
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      background:var(--btn-bg);
+      color:var(--fg);
+    }
+    #themeIcon{
+      width:28px;
+      height:28px;
+      display:block;
+      margin:0 auto;
+    }
     /* ------------------------------
        6) Spacer to aid tall screens
        ------------------------------ */
@@ -133,7 +148,7 @@
     }
     .pop-soft{ animation: popSoft .45s ease; }
     /* Performance hints for smooth transforms */
-    .timer-fill, .row, .bank { will-change: transform; }
+    .row > .tile, .bank > .btn-letter { will-change: transform; contain: layout paint; }
     @media (prefers-reduced-motion: reduce){
       .shake, .jiggle, .pop{ animation-duration: .01s; }
       .timer-fill{ transition: none; }
@@ -189,13 +204,13 @@
       <button id="shuffleBtn" type="button" aria-label="Shuffle letters">Shuffle</button>
       <button id="clearBtn" type="button" aria-label="Clear all">Clear</button>
     </div>
-
-    <div class="spacer" aria-hidden="true"></div>
     <div class="theme-bottom">
       <button id="themeBtn" class="icon" aria-label="Toggle theme" title="Toggle theme">
         <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
       </button>
-    </div>    
+    </div>  
+    <div class="spacer" aria-hidden="true"></div>
+      
     <!-- A11y announcer for granular updates (letters placed, etc.) -->
     <div id="announcer" class="sr-only" aria-live="polite"></div>
   </div>
@@ -489,8 +504,9 @@
       renderAnswer();
       renderBank();
       announcer.textContent = `Placed ${b.ch} in slot ${idx+1}`;
-      // slot pop (soft)
-      play(answerRow, 'pop-soft');
+      // slot pop (soft) — only the tile we just filled
+      const slotEl = answerRow.children[idx];
+      if (slotEl) play(slotEl, 'pop-soft');
 
       autoSubmitIfFull();
     }
@@ -537,12 +553,20 @@
         state.isAnimating = true;
         play(answerRow, 'pop');
         setTimeout(()=>{ state.isAnimating = false; nextWord(true); }, 600);
-      }else{
-        // Invalid: shake + clear; timer continues; no life loss.
-        play(answerRow, 'shake');
-
-        setTimeout(()=> onClearAll({ animate:false }), 220);
       }
+      else{
+      // Invalid: shake, then clear when the shake actually finishes
+      state.isAnimating = true;
+      play(answerRow, 'shake');
+      const onEnd = (e)=>{
+        if(e.animationName === 'shake'){
+          answerRow.removeEventListener('animationend', onEnd);
+          onClearAll({ animate:false });
+          state.isAnimating = false;
+        }
+      };
+      answerRow.addEventListener('animationend', onEnd, { once:true });
+    }
     }
 
     function gameOver(){
