@@ -299,6 +299,7 @@
     const announcer = $("#announcer");
     const shuffleBtn = $("#shuffleBtn");
     const clearBtn = $("#clearBtn");
+    const themeBtn = $("#themeBtn");
 
     const overlay = $("#overlay");
     const dialog = $("#dialog");
@@ -348,8 +349,7 @@
     svg.innerHTML = '<circle cx="12" cy="12" r="10" fill="currentColor"/>';
   }
 }
-    $("#themeBtn").addEventListener('click', toggleTheme);
-
+  makeTap(themeBtn, toggleTheme);
     /* ------------------------------
        5) Utilities
        ------------------------------ */
@@ -657,13 +657,40 @@ function onBackspace(opts = { animate: true }){
     /* ------------------------------
        9) Events — clicks & keyboard
        ------------------------------ */
-       // Letter taps: run on release
+       // Letter taps: show press while held; commit on release
+      bankRow.addEventListener('pointerdown', (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(!t.classList.contains('btn-letter')) return;
+        if (t.disabled) return;
+        t.classList.add('press');
+        // capture so we always get the matching pointerup/cancel
+        if (typeof t.setPointerCapture === 'function') {
+          try { t.setPointerCapture(e.pointerId); } catch {}
+        }
+      });
+
       bankRow.addEventListener('pointerup', (e)=>{
         const t = e.target;
         if(!(t instanceof HTMLElement)) return;
-        if(t.classList.contains('btn-letter')){
-          const idx = Number(t.dataset.idx);
-          onLetterTap(idx);
+        if(!t.classList.contains('btn-letter')) return;
+        t.classList.remove('press');
+        if (t.disabled) return; // might have been disabled mid-press
+        const idx = Number(t.dataset.idx);
+        onLetterTap(idx);
+      });
+
+      bankRow.addEventListener('pointercancel', (e)=>{
+        const t = e.target;
+        if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
+          t.classList.remove('press');
+        }
+      });
+
+      bankRow.addEventListener('pointerleave', (e)=>{
+        const t = e.target;
+        if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
+          t.classList.remove('press');
         }
       });
 
@@ -709,7 +736,7 @@ function onBackspace(opts = { animate: true }){
         b.type = 'button';
         b.textContent = a.label;
         if(a.isPrimary) b.autofocus = true;
-        b.addEventListener('click', a.action);
+        makeTap(b, a.action);
         dialogActions.appendChild(b);
       });
       restoreFocusEl = document.activeElement;
