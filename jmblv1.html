@@ -553,8 +553,10 @@
       play(bankRow, 'jiggle');
     }
 
-    function onClearAll(opts = { animate: true }){
-  if(state.isAnimating || state.modalOpen) return;
+    function onClearAll(opts = { animate: true, force: false }){
+  // allow clearing during animations only when explicitly forced
+  if (!opts.force && (state.isAnimating || state.modalOpen)) return;
+
   for(let i=0;i<5;i++){
     const bi = state.placedIndex[i];
     if(bi !== null){ state.bank[bi].used = false; }
@@ -577,37 +579,36 @@
     }
 
     function evaluateGuess(guess){
-  if (GUESSES_SET.has(guess)) {
-    // Correct: soft-pop the bar + pop each tile in sync
-    stopTimer();
+    if (GUESSES_SET.has(guess)) {
+      // Correct: soft-pop the bar + pop each tile in sync
+      stopTimer();
+      state.isAnimating = true;
+      play(answerRow, 'pop-soft');
+      [...answerRow.children].forEach(el => play(el, 'pop'));
+      setTimeout(() => {
+        state.isAnimating = false;
+        nextWord(true);
+      }, 600);
+      return;
+    }
+
+    // Invalid: shake, then clear — robust on older iOS
     state.isAnimating = true;
-    play(answerRow, 'pop-soft');
-    [...answerRow.children].forEach(el => play(el, 'pop'));
-    setTimeout(() => {
+    play(answerRow, 'shake');
+
+    let cleared = false;
+    const finish = () => {
+      if (cleared) return;
+      cleared = true;
+      answerRow.removeEventListener('animationend', finish);
+      onClearAll({ animate: false, force: true }); // <— force clears during animation
       state.isAnimating = false;
-      nextWord(true);
-    }, 600);
-    return;
+    };
+
+    // Prefer animationend, but also guard with a timeout
+    answerRow.addEventListener('animationend', finish, { once: true });
+    setTimeout(finish, 320); // ~.22s shake + buffer
   }
-
-  // Invalid: shake, then clear — robust on older iOS
-  state.isAnimating = true;
-  play(answerRow, 'shake');
-
-  let cleared = false;
-  const finish = () => {
-    if (cleared) return;
-    cleared = true;
-    answerRow.removeEventListener('animationend', finish);
-    onClearAll({ animate: false });
-    state.isAnimating = false;
-  };
-
-  // Prefer animationend, but also guard with a timeout
-  answerRow.addEventListener('animationend', finish, { once: true });
-  const guard = setTimeout(finish, 320); // ~.22s shake + buffer
-}
-
 
     function gameOver(){
       stopTimer();
