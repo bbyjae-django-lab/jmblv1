@@ -53,7 +53,7 @@
        2) Header (3-col grid)
        ------------------------------ */
     .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
-    .title{ text-align:center; font-weight:700; letter-spacing:.12em; font-size:3em; }
+    .title{ text-align:center; font-weight:900; letter-spacing:.12em; font-size:3em; }
     .theme-wrap{ justify-self:end; }
     .icon{ width:22px; height:22px; display:block; }
     .icon svg{ width:100%; height:100%; display:block; }
@@ -132,6 +132,8 @@
       0%{ transform:scale(1) } 50%{ transform:scale(1.03) } 100%{ transform:scale(1) }
     }
     .pop-soft{ animation: popSoft .45s ease; }
+    /* Performance hints for smooth transforms */
+    .timer-fill, .row, .bank { will-change: transform; }
     @media (prefers-reduced-motion: reduce){
       .shake, .jiggle, .pop{ animation-duration: .01s; }
       .timer-fill{ transition: none; }
@@ -246,6 +248,7 @@
     const timerRail = $("#timerRail");
     const timerFill = $("#timerFill");
     const srSeconds = $("#srSeconds");
+    let lastSpokenSecs = null;
     const answerRow = $("#answerRow");
     const bankRow = $("#bank");
     const announcer = $("#announcer");
@@ -308,7 +311,16 @@
     const randInt = n => Math.floor(Math.random()*n);
     function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j = randInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
     function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-
+    const ANIM_CLASSES = ['shake','shake-soft','jiggle','pop','pop-soft'];
+    function play(el, cls){
+      // remove any prior animation classes
+      for(const c of ANIM_CLASSES) el.classList.remove(c);
+      // restart next frame (avoids forced synchronous layout)
+      requestAnimationFrame(()=>{
+        el.classList.add(cls);
+        el.addEventListener('animationend', ()=> el.classList.remove(cls), { once:true });
+      });
+    }
     function normalizeList(text){
       // strip BOM
       if(text.charCodeAt(0) === 0xFEFF){ text = text.slice(1); }
@@ -358,7 +370,11 @@
       const secs = Math.round(remain/1000);
       timerRail.setAttribute('aria-valuenow', String(secs));
       // Speak at most once per second
-      srSeconds.textContent = `${secs} seconds remaining`;
+      if (secs !== lastSpokenSecs) {
+  srSeconds.textContent = `${secs} seconds remaining`;
+  lastSpokenSecs = secs;
+}
+
     }
 
     function renderAnswer(){
@@ -452,14 +468,13 @@
       state.isAnimating = true;
       for(let i=0;i<5;i++){ state.current[i] = state.answerWord[i]; }
       renderAnswer();
-      answerRow.classList.remove('jiggle','pop');
-      answerRow.classList.add('shake');
+      play(answerRow, 'shake');
       setTimeout(()=>{
-        answerRow.classList.remove('shake');
         state.isAnimating = false;
         if(state.lives > 0){ nextWord(false); }
         else{ gameOver(); }
       }, 800);
+
     }
 
     function onLetterTap(bankIndex){
@@ -474,14 +489,9 @@
       renderAnswer();
       renderBank();
       announcer.textContent = `Placed ${b.ch} in slot ${idx+1}`;
-      // slot pop
-      answerRow.classList.remove('shake'); // ensure no lingering shake
-      answerRow.classList.remove('pop','pop-soft');
-      void answerRow.offsetWidth; // reflow to restart animation
-      answerRow.classList.add('pop-soft');
-      answerRow.addEventListener('animationend', (e)=>{
-        if (e.animationName === 'popSoft') answerRow.classList.remove('pop-soft');
-      }, { once:true });
+      // slot pop (soft)
+      play(answerRow, 'pop-soft');
+
       autoSubmitIfFull();
     }
 
@@ -494,7 +504,7 @@
       shuffleInPlace(unused);
       unusedIdx.forEach((slot, j)=>{ state.bank[slot] = unused[j]; });
       renderBank();
-      bankRow.classList.remove('jiggle'); void bankRow.offsetWidth; bankRow.classList.add('jiggle');
+      play(bankRow, 'jiggle');
     }
 
     function onClearAll(opts = { animate: true }){
@@ -510,13 +520,7 @@
 
   // animate clear only if requested (prevents double-shake on invalid)
   if (opts.animate){
-    answerRow.classList.remove('pop','shake','shake-soft');
-    void answerRow.offsetWidth;
-    // half-strength clear animation (added in §2)
-    answerRow.classList.add('shake-soft');
-    answerRow.addEventListener('animationend', (e)=>{
-      if (e.animationName === 'shakeSoft') answerRow.classList.remove('shake-soft');
-    }, { once:true });
+    play(answerRow, 'shake-soft');
   }
 }
 
@@ -531,18 +535,11 @@
         // Correct (any real anagram in guesses.txt). Celebrate, advance, refill timer.
         stopTimer();
         state.isAnimating = true;
-        answerRow.classList.remove('pop'); void answerRow.offsetWidth; answerRow.classList.add('pop');
+        play(answerRow, 'pop');
         setTimeout(()=>{ state.isAnimating = false; nextWord(true); }, 600);
       }else{
         // Invalid: shake + clear; timer continues; no life loss.
-        answerRow.classList.remove('pop'); // ensure .shake is visible
-        answerRow.classList.remove('shake');
-        void answerRow.offsetWidth;
-        answerRow.classList.add('shake');
-        // clean up .shake at the end so it doesn't persist
-        answerRow.addEventListener('animationend', (e)=>{
-          if (e.animationName === 'shake') answerRow.classList.remove('shake');
-        }, { once:true });
+        play(answerRow, 'shake');
 
         setTimeout(()=> onClearAll({ animate:false }), 220);
       }
@@ -559,17 +556,10 @@
     /* ------------------------------
        9) Events — clicks & keyboard
        ------------------------------ */
-    bankRow.addEventListener('click', (e)=>{
-      const t = e.target;
-      if(!(t instanceof HTMLElement)) return;
-      if(t.classList.contains('btn-letter')){
-        const idx = Number(t.dataset.idx);
-        onLetterTap(idx);
-      }
-    });
+       bankRow.addEventListener('pointerdown', (e)=>{ const t = e.target; if(!(t instanceof HTMLElement)) return; if(t.classList.contains('btn-letter')){ const idx = Number(t.dataset.idx); onLetterTap(idx); } });
 
-    shuffleBtn.addEventListener('click', ()=>{ bounce(shuffleBtn); onShuffle(); });
-    clearBtn.addEventListener('click', ()=>{ bounce(clearBtn); onClearAll(); });
+      shuffleBtn.addEventListener('pointerdown', ()=>{ bounce(shuffleBtn); onShuffle(); });
+      clearBtn.addEventListener('pointerdown', ()=>{ bounce(clearBtn); onClearAll(); });
 
     function bounce(btn){
       btn.classList.remove('press');
