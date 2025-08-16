@@ -437,10 +437,10 @@
       state.isAnimating = true;
       for(let i=0;i<5;i++){ state.current[i] = state.answerWord[i]; }
       renderAnswer();
-      answerRow.classList.remove('shake','jiggle','pop');
-      answerRow.classList.add('shudder');
+      answerRow.classList.remove('shudder','jiggle','pop');
+      answerRow.classList.add('shake');
       setTimeout(()=>{
-        answerRow.classList.remove('shudder');
+        answerRow.classList.remove('shake');
         state.isAnimating = false;
         if(state.lives > 0){ nextWord(false); }
         else{ gameOver(); }
@@ -489,7 +489,7 @@
       renderAnswer();
       renderBank();
       // shake to acknowledge clear
-      answerRow.classList.remove('shudder'); void answerRow.offsetWidth; answerRow.classList.add('shudder');
+      answerRow.classList.remove('shake'); void answerRow.offsetWidth; answerRow.classList.add('shake');
     }
 
     function autoSubmitIfFull(){
