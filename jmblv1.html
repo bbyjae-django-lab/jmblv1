@@ -466,13 +466,15 @@
       renderBank();
     }
     function syncControlHeights(){
-      const tile = bankRow.querySelector('.btn-letter');
-      const h = tile ? Math.round(tile.getBoundingClientRect().height) : 0;
-      if(h){
-        shuffleBtn.style.height = h + 'px';
-        clearBtn.style.height = h + 'px';
-      }
+    const tile = bankRow.querySelector('.btn-letter');
+    // Use width (square tiles) via offsetWidth to avoid transform-inflated rects
+    const w = tile ? Math.round(tile.offsetWidth) : 0;
+    if(w){
+      const px = w + 'px';
+      if (shuffleBtn.style.height !== px) shuffleBtn.style.height = px;
+      if (clearBtn.style.height !== px)   clearBtn.style.height   = px;
     }
+  }
 
     /* ------------------------------
        7) Timer control
