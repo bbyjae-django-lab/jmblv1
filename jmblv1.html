@@ -68,7 +68,9 @@
         overscroll-behavior: none;
         gap: 16px;
       }
-      .app.pre > :not(.header){ display:none !important; }
+      /* Hide all UI except the header during pre-game or while any modal is open */
+      .app.pre > :not(.header),
+      .app.masked > :not(.header){ display:none !important; }
 
     /* ------------------------------
        2) Header (3-col grid)
@@ -781,6 +783,7 @@
     }
     function showModal(title, bodyHTML, actions){
       state.modalOpen = true;
+      app.classList.add('masked');
       overlay.setAttribute('aria-hidden','false');
       dialog.setAttribute('aria-hidden','false');
       dialogTitle.textContent = title;
@@ -807,6 +810,7 @@
     }
     function closeModal(){
       state.modalOpen = false;
+      app.classList.remove('masked');
       overlay.setAttribute('aria-hidden','true');
       dialog.setAttribute('aria-hidden','true');
       dialog.removeEventListener('keydown', trapTab);
