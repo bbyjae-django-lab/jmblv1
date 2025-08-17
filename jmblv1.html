@@ -68,6 +68,7 @@
         overscroll-behavior: none;
         gap: 16px;
       }
+      .app.pre > :not(.header){ display:none !important; }
 
     /* ------------------------------
        2) Header (3-col grid)
@@ -187,7 +188,7 @@
   </style>
 </head>
 <body>
-  <div id="app" class="app" aria-live="polite">
+  <div id="app" class="app pre" aria-live="polite">
     <!-- Header -->
     <header class="header">
       <div></div>
@@ -494,6 +495,7 @@
        8) Core game flow
        ------------------------------ */
     function startRun(){
+      app.classList.remove('pre');
       state.lives = STARTING_LIVES;
       state.score = 0;
       state.runStartAt = Date.now();
