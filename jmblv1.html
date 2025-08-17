@@ -30,28 +30,6 @@
       --tile-bg:#000000; --tile-fg:#FFFFFF; --btn-bg:#000000; --btn-fg:#FFFFFF;
       --border:rgba(255,255,255,.20);
     }
-    /* 0b) Background art variables (day ↔ night auto via html.dark) */
-    :root{
-      /* Day sky (soft banded “pixel” vibe) */
-      --sky-0:#9FD6FF;  /* top */
-      --sky-1:#CFE9FF;  /* mid */
-      --sky-2:#FFE3B3;  /* warm horizon */
-      --stripe: rgba(255,255,255,.06);   /* banding overlay */
-      --star: rgba(255,255,255,.00);     /* hidden by day */
-      --stars-op: 0;                     /* no stars in day */
-      --hill:#EDE7DB;                    /* faint hills */
-    }
-
-    html.dark{
-      /* Night sky */
-      --sky-0:#0B1027;
-      --sky-1:#151B3A;
-      --sky-2:#1F2755;
-      --stripe: rgba(255,255,255,.03);
-      --star: rgba(255,255,255,.85);
-      --stars-op: .65;                   /* stars visible at night */
-      --hill:#0F1430;
-    }
 
     *, *::before, *::after{ box-sizing: border-box; }
     html, body{ height:100%; }
@@ -66,9 +44,7 @@
     :focus{ outline: auto; }
     :focus:not(:focus-visible){ outline: none; }
     a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-    /* Only disable browser gestures inside gameplay; leave the modal free */
-    #app{ touch-action: none; }
-    .dialog, .dialog *{ touch-action: manipulation; }
+    html, body, #app{ touch-action: none; }
     button{
       font:inherit; color:inherit;
       background:var(--btn-bg);
@@ -111,56 +87,6 @@
       overscroll-behavior: none;
       gap: 16px;
     }
-    /* 1b) Full-screen pixel-art background (sits behind the app) */
-    .bg-art{
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-
-      /* Stacking order: background → app → overlay → dialog */
-      .bg-art{ z-index: 0; }             /* already fixed-positioned */
-      .app{ position: relative; z-index: 10; }
-      .overlay{ z-index: 20; }
-      .dialog{ z-index: 30; pointer-events: auto; }
-
-
-      /* layered backgrounds: gradient sky + subtle banding stripes */
-      background-image:
-        linear-gradient(to bottom, var(--sky-0), var(--sky-1) 55%, var(--sky-2)),
-        repeating-linear-gradient(180deg, transparent 0 22px, var(--stripe) 22px 44px);
-      background-size: cover, auto;
-      background-attachment: fixed, fixed; /* keeps it steady while UI moves */
-    }
-
-    /* Stars (night only via variables) */
-    .bg-art::after{
-      content:"";
-      position:absolute; inset:0;
-      opacity: var(--stars-op);
-      /* two offset dot grids for a “pixel” star feel */
-      background-image:
-        radial-gradient(circle, var(--star) 1.2px, transparent 1.3px),
-        radial-gradient(circle, var(--star) 1.2px, transparent 1.3px);
-      background-size: 24px 24px, 24px 24px;
-      background-position: 0 0, 12px 12px;
-    }
-
-    /* Simple hill silhouettes along the bottom (subtle, low contrast) */
-    .bg-art::before{
-      content:"";
-      position:absolute; inset:0;
-      background:
-        radial-gradient(100% 60% at 0% 100%,   var(--hill) 60%, transparent 61%),
-        radial-gradient(100% 60% at 100% 100%, var(--hill) 60%, transparent 61%);
-      background-repeat: no-repeat;
-      background-position: 0% 100%, 100% 100%;
-      background-size: 60% 45%, 60% 50%;
-      opacity:.45;
-    }
-
-    /* Ensure the app sits above the art */
-    .app{ position: relative; z-index: 1; }
 
     /* Hide all UI except the header during pre-game or while any modal is open */
     .app.pre > :not(.header),
@@ -301,9 +227,6 @@
   </style>
 </head>
 <body>
-  <!-- Background art layer -->
-  <div class="bg-art" aria-hidden="true"></div>
-
   <div id="app" class="app pre" aria-live="polite">
     <!-- Header -->
     <header class="header">
@@ -458,16 +381,7 @@
     const THEME_KEY = 'jumbl-theme';
     function applyTheme(t){ document.documentElement.classList.toggle('dark', t === 'dark'); updateThemeIcon(); }
     function getSystemTheme(){ return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
-    function initTheme(){
-    const stored = localStorage.getItem(THEME_KEY);
-    applyTheme(stored || getSystemTheme());
-
-    // If the user hasn’t explicitly chosen a theme, follow the OS live.
-    const mq = matchMedia('(prefers-color-scheme: dark)');
-    mq.addEventListener?.('change', (e)=>{
-      if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
-    });
-  }
+    function initTheme(){ applyTheme(localStorage.getItem(THEME_KEY) || getSystemTheme()); }
     function toggleTheme(){
       const isDark = document.documentElement.classList.toggle('dark');
       localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
@@ -818,38 +732,12 @@
 
     // Buttons (taps and keyboard keys): stay "pressed" while held; pop back on pointerup, then run action
     function makeTap(btn, handler){
-    if(!btn) return;
-    let fired = false;
-    const run = (e)=>{
-      if(fired) return;
-      fired = true;
-      try{ handler(e); } finally {
-        // reset on next tick to avoid double-fire when both pointerup+click arrive
-        setTimeout(()=>{ fired = false; }, 0);
-      }
-    };
-
-    btn.addEventListener('pointerdown', (e)=>{
-      btn.classList.add('press');
-      if (typeof btn.setPointerCapture === 'function') {
-        try { btn.setPointerCapture(e.pointerId); } catch {}
-      }
-    });
-
-    btn.addEventListener('pointerup', (e)=>{
-      btn.classList.remove('press');
-      run(e);
-    });
-
-    btn.addEventListener('pointercancel', ()=> btn.classList.remove('press'));
-    btn.addEventListener('pointerleave',  ()=> btn.classList.remove('press'));
-
-    // Fallback for browsers that don’t deliver pointer events reliably
-    btn.addEventListener('click', (e)=>{
-      e.preventDefault(); // avoid double-run with pointerup
-      run(e);
-    });
-  }
+      if(!btn) return;
+      btn.addEventListener('pointerdown', () => btn.classList.add('press'));
+      btn.addEventListener('pointerup', () => { btn.classList.remove('press'); handler(); });
+      btn.addEventListener('pointercancel', () => btn.classList.remove('press'));
+      btn.addEventListener('pointerleave', () => btn.classList.remove('press'));
+    }
 
     makeTap(shuffleBtn, onShuffle);
     makeTap(clearBtn, () => onClearAll({ animate: true }));
