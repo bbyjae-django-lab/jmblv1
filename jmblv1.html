@@ -187,6 +187,7 @@
 
     /* Performance hints for smooth transforms */
     .row > .tile, .bank > .btn-letter { will-change: transform; contain: layout paint; }
+    .timer-rail { will-change: transform; contain: layout paint; }
 
     @media (prefers-reduced-motion: reduce){
       .shake, .jiggle, .pop{ animation-duration: .01s; }
@@ -460,6 +461,7 @@
       if (secs !== lastSpokenSecs) {
         srSeconds.textContent = `${secs} seconds remaining`;
         lastSpokenSecs = secs;
+        if (secs <= 5 && secs > 0) { play(timerRail, 'shake-soft'); }
       }
     }
 
