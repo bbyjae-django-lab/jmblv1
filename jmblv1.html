@@ -27,9 +27,15 @@
       --g1:#FFB36C; /* orange (more weight) */
       --g2:#FF8FC6; /* pink mid */
       --g3:#FFA6E6; /* pink end */
-      --grad-mid: 50%;                      /* <- midpoint moved from ~45% to 50% */
-      --jumbl-grad: linear-gradient(90deg, var(--g1) 0%, var(--g2) var(--grad-mid), var(--g3) 100%);
-
+      --grad-mid: 50%;
+      --g1-hold: 40%; /* hold the first color before the mid-blend (was ~33%) */
+      --jumbl-grad: linear-gradient(
+        90deg,
+        var(--g1) 0%,
+        var(--g1) var(--g1-hold),  /* plateau of orange in light */
+        var(--g2) var(--grad-mid),
+        var(--g3) 100%
+      );
       /* continuous gradient sizing (set by JS; fallback 100vw) */
       --app-w: 100vw;
 
@@ -45,8 +51,13 @@
       --g1:#9AA9FF; /* purple/indigo (more weight) */
       --g2:#71D3CF; /* aqua mid */
       --g3:#46E39C; /* green end */
-      --jumbl-grad: linear-gradient(90deg, var(--g1) 0%, var(--g2) var(--grad-mid), var(--g3) 100%);
-
+      --jumbl-grad: linear-gradient(
+        90deg,
+        var(--g1) 0%,
+        var(--g1) var(--g1-hold),  /* more purple before the mid-blend */
+        var(--g2) var(--grad-mid),
+        var(--g3) 100%
+      );
       /* elevation */
       --shadow: 0 8px 24px rgba(0,0,0,.35);
     }
@@ -159,16 +170,23 @@
       background-position: calc(-1 * var(--grad-x, 0px)) 0;
       background-repeat: no-repeat;
     }
-    .lives .pip:not(.off){ background: var(--fg); }
 
     .score{  text-align:center; font-size:17px; font-weight:700; color:var(--muted); }
 
     .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
     .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
-    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background-image: var(--jumbl-grad);
-    background-size: var(--app-w) 100%;
-    background-position: calc(-1 * var(--grad-x, 0px)) 0;
-    background-repeat: no-repeat; transition: transform 100ms linear; }
+    .timer-fill{
+      position:absolute; inset:0;
+      transform-origin:left center; transform: scaleX(1);
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat: no-repeat;
+      border-radius: inherit;          /* <-- keeps caps rounded */
+      will-change: transform;          /* <-- stabilizes on iOS */
+      transform: translateZ(0) scaleX(1); /* <-- forces GPU path; avoids square cap glitch */
+      transition: transform 100ms linear;
+    }
 
     /* spacing tweaks for single-hand reach */
     .header{ margin-top: 36px; margin-bottom: 26px; }
@@ -201,17 +219,27 @@
       font-size: clamp(24px, 8.5vw, 36px);  /* slightly larger */
       user-select:none;
     }
-    .tile{ background:var(--tile-bg); }
+    .tile{ background-color: var(--tile-bg); }       /* keep gradient-image above */
     .tile.empty{ color: var(--muted); }
-    .btn-letter{ background:var(--btn-bg); }
+    .btn-letter{ background-color: var(--btn-bg); }  /* keep gradient-image above */
     .btn-letter[aria-pressed="true"], .btn-letter.used{ opacity:.32; }
 
     /* ------------------------------
        5) Controls
        ------------------------------ */
     .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
-    .controls button{ width:100%; box-shadow: var(--shadow);    }
-    .press{ transform: scale(.96); transition: transform 120ms ease; box-shadow: 0 4px 14px rgba(0,0,0,.12);  html.dark .press{ box-shadow: 0 6px 18px rgba(0,0,0,.55); }  }
+    .controls button{
+      width:100%;
+      box-shadow: var(--shadow);
+      color:#fff;
+      /* gradient backplate */
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat: no-repeat;
+      border-color: transparent;}    
+      .press{ transform: scale(.96); transition: transform 120ms ease; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+      html.dark .press{ box-shadow: 0 6px 18px rgba(0,0,0,.55); }
     .controls button{ font-weight:700; }
     .card .actions button{ font-weight:700; }
     .theme-bottom{ display:flex; justify-content:center; }
@@ -219,9 +247,14 @@
     #themeBtn{
       display:inline-flex; align-items:center; justify-content:center;
       width:48px; height:48px; padding:0;
-      border:1px solid var(--border); border-radius: var(--radius); /* rounded square */
+      border:1px solid var(--border); border-radius: var(--radius);
       box-shadow: var(--shadow);
-      background:var(--btn-bg); color:var(--fg);
+      color:#fff;
+      /* gradient backplate */
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat:no-repeat;
     }
     #themeIcon{ width:28px; height:28px; display:block; }
 
@@ -277,7 +310,25 @@
     .card h2{ margin:0 0 10px; letter-spacing:.06em; }
     .card p{ margin:.5rem 0; color:var(--muted); }
     .card .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
-
+    /* gradient action buttons inside modals */
+    .card .actions button{
+      color:#fff;
+      box-shadow: var(--shadow);
+      border-color: transparent;
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat: no-repeat;
+    }
+    /* allow gradient text in dialog title when we add the class via JS */
+    .card h2.grad-text{
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat:no-repeat;
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent;
+    }
     /* ------------------------------
        9) Visually-hidden for a11y
        ------------------------------ */
@@ -403,18 +454,28 @@
       const appRect = app.getBoundingClientRect();
 
       const setX = (el) => {
-        if(!el) return;
+        if (!el) return;
         const r = el.getBoundingClientRect();
         el.style.setProperty('--grad-x', Math.round(r.left - appRect.left) + 'px');
       };
 
-      // Title, lives, timer fill
+      // Title
       setX(document.querySelector('.title'));
+
+      // Lives (only active pips)
       document.querySelectorAll('.lives .pip:not(.off)').forEach(setX);
+
+      // Timer fill
       setX(document.getElementById('timerFill'));
 
-      // Answer row tiles + bank buttons
+      // Answer tiles + bank buttons
       document.querySelectorAll('#answerRow .tile, #bank .btn-letter').forEach(setX);
+
+      // ⬇️ NEW: controls + theme + modal bits
+      document.querySelectorAll('.controls button').forEach(setX);              // Shuffle / Clear
+      setX(document.getElementById('themeBtn'));                               // Theme toggle
+      document.querySelectorAll('.card .actions button, .card h2.grad-text')   // Modal action buttons + gradient title
+              .forEach(setX);
     }
     /* ------------------------------
        3) Viewport var --vw updates
@@ -583,7 +644,10 @@
         const btn = document.createElement('button');
         btn.className = 'btn-letter';
         btn.type = 'button';
-        btn.textContent = b.ch;
+        const span = document.createElement('span');
+        span.textContent = b.ch;
+        span.className = 'grad-text';
+        btn.appendChild(span);
         btn.disabled = b.used;
         btn.setAttribute('aria-pressed', b.used ? 'true' : 'false');
         btn.dataset.idx = String(idx);
@@ -737,8 +801,10 @@
       }
       renderAnswer();
       renderBank();
-      // animate clear only if requested (prevents double-shake on invalid)
-      if (opts.animate){ play(answerRow, 'shake-soft'); }
+      // animate clear only if requested — per-tile to keep shadows individual
+      if (opts.animate){
+        [...answerRow.children].forEach(el => play(el, 'shake-soft'));
+      }
     }
 
     function autoSubmitIfFull(){
@@ -762,7 +828,8 @@
       }
       // Invalid: shake, then clear — robust on older iOS
       state.isAnimating = true;
-      play(answerRow, 'shake');
+      // per-tile shake so each tile keeps its own shadow
+      [...answerRow.children].forEach(el => play(el, 'shake'));
       let cleared = false;
       const finish = () => {
         if (cleared) return;
@@ -922,11 +989,15 @@
       app.classList.add('masked');
       overlay.setAttribute('aria-hidden','false');
       dialog.setAttribute('aria-hidden','false');
+      setGradientWidth();      // in case viewport width changed
+      updateGradientAnchors(); // position gradients for modal title/buttons
       dialogTitle.textContent = title;
+      dialogTitle.classList.add('grad-text');
       dialogBody.innerHTML = bodyHTML;
       dialogActions.innerHTML = '';
       actions.forEach(a=>{
         const b = document.createElement('button');
+        b.classList.add('flow-grad'); // give modal buttons the gradient backplate
         b.type = 'button';
         b.textContent = a.label;
         if(a.isPrimary) b.autofocus = true;
