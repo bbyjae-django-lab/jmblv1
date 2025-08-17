@@ -2,10 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>JUMBL</title>
   <style>
@@ -23,302 +20,342 @@
       --gap:10px;   /* tile/bank gap */
       --stack-tight: clamp(6px, 1.3vh, 12px);
     }
-    .dark{
-      /* Dark override */
-      --bg:#000000; --fg:#FFFFFF; --muted:rgba(255,255,255,.65); --track:rgba(255,255,255,.15);
+    html.dark{
+      /* Dark */
+      --bg:#000000; --fg:#FFFFFF; --muted:rgba(255,255,255,.70); --track:rgba(255,255,255,.15);
       --tile-bg:#000000; --tile-fg:#FFFFFF; --btn-bg:#000000; --btn-fg:#FFFFFF;
-      --border:rgba(255,255,255,.18);
+      --border:rgba(255,255,255,.20);
     }
 
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{
-      margin:0;
-      font: 500 16px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background:var(--bg); color:var(--fg);
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    *, *::before, *::after{ box-sizing: border-box; }
+    html, body{ height:100%; }
+    body{ margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--fg); -webkit-text-size-adjust:100%; overflow-x:hidden; }
+    :focus{ outline: auto; }
+    :focus:not(:focus-visible){ outline: none; }
+    a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    html, body, #app{ touch-action: none; }
+
+    button{ font:inherit; color:inherit; background:var(--btn-bg); border:1px solid var(--border); border-radius: var(--radius); padding:1rem 1rem; cursor:pointer; }
+    button:disabled{ opacity:.35; cursor: default; }
+
+    /* Disable text selection/callouts inside the play area */
+    .app, .app *:not(input):not(textarea){
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    }
+    /* Also disable text selection/callouts inside modals */
+    .dialog, .dialog *:not(input):not(textarea){
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
     }
 
-    /* Prevent accidental selection/zoom inside the app */
-    #app{
-      min-height:100dvh; min-height:100vh;
-      padding:
-        calc(env(safe-area-inset-top) + 14px)
-        14px
-        calc(env(safe-area-inset-bottom) + 14px);
-      max-width:var(--maxw); margin:0 auto;
-      display:grid; gap:var(--stack-tight);
-      grid-template-rows:
-        auto            /* header */
-        auto            /* status (lives/score) */
-        auto            /* timer */
-        auto            /* answer row */
-        auto            /* bank row */
-        auto            /* controls */
-        1fr             /* spacer */
-        auto;           /* theme btn */
-      touch-action: manipulation;
-      user-select:none; -webkit-user-select:none;
-      overscroll-behavior:none;
+    /* ------------------------------
+       1) App shell & safe-area insets
+       ------------------------------ */
+       .app{
+        /* Use visualViewport width (via --vw) to avoid iOS rounding bleed */
+        width: min(calc(var(--vw, 100vw)), var(--maxw));
+
+        min-height: 100vh;               /* fallback */
+        height: 100dvh;                  /* modern browsers */
+        margin: 0 auto;
+        display:flex; flex-direction:column;
+
+        /* Safe-area aware side padding + base margin */
+        padding:
+          calc(env(safe-area-inset-top) + 16px)
+          max(12px, calc(env(safe-area-inset-right) + 12px))
+          calc(env(safe-area-inset-bottom) + 18px)
+          max(12px, calc(env(safe-area-inset-left) + 12px));
+
+        overflow: hidden;                /* no scroll bounce */
+        overscroll-behavior: none;
+        gap: 16px;
+      }
+
+    /* ------------------------------
+       2) Header (3-col grid)
+       ------------------------------ */
+    .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
+    .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:3.5em; }
+    .theme-wrap{ justify-self:end; }
+    .icon{ width:28px; height:28px; display:block; }
+    .icon svg{ width:100%; height:100%; display:block; }
+    .theme-bottom{ display:flex; justify-content:center; }
+
+    /* ------------------------------
+       3) Lives, Score, Timer
+       ------------------------------ */
+    .lives{ display:flex; justify-content:center; gap:8px; }
+    .pip{ width:28px; aspect-ratio:1/1; border:1px solid var(--border); border-radius:6px; background: transparent; }
+    .pip.off{ opacity:.32; }
+    .lives .pip:not(.off){ background: var(--fg); }
+
+    .score{  text-align:center; font-size:17px; font-weight:700; color:var(--muted); }
+
+    .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
+    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
+    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
+
+    .header{ margin-top: 36px; margin-bottom: 26px; }
+    .lives{  margin-bottom: 4px; }
+    .score{  margin-top: 4px; margin-bottom: 4px; }
+    .timer-card{ margin-top: 4px; margin-bottom: 2px; }
+    .row{ margin-top: 2px; margin-bottom: 2px; }
+    .bank{ margin-top: 2px; margin-bottom: 2px; }
+    .controls{ margin-top: 2px; margin-bottom: 4px; }
+    .theme-bottom{ margin-top: 4px; }
+
+    /* ------------------------------
+       4) Squares: Answer row & Letter bank
+       ------------------------------ */
+      .row, .bank{ display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--gap); }
+      .tile, .btn-letter{
+        aspect-ratio:1/1;
+        min-inline-size:64px;
+        border:1px solid var(--border); border-radius: var(--radius);
+        background: var(--tile-bg); color:var(--tile-fg);
+        display:flex; align-items:center; justify-content:center; /* older iOS centering */
+        line-height:1;                                             /* avoid vertical bias */
+        font-weight:900;
+        font-size: clamp(24px, 8.5vw, 36px);  /* slightly larger */
+        user-select:none;
+      }
+      .tile{ background:var(--tile-bg); }
+      .tile.empty{ color: var(--muted); }
+      .btn-letter{ background:var(--btn-bg); }
+      .btn-letter[aria-pressed="true"], .btn-letter.used{ opacity:.32; }
+
+    /* ------------------------------
+       5) Controls
+       ------------------------------ */
+       .controls{
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--gap);
+      }
+      .controls button{ width:100%; }
+      .press{ transform: scale(.96); transition: transform 120ms ease; }
+      .controls button{ font-weight:700; }
+      .card .actions button{ font-weight:700; }
+      .theme-bottom{ display:flex; justify-content:center; }
+
+    #themeBtn{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:48px; height:48px; padding:0; border:1px solid var(--border);
+      border-radius: var(--radius); /* rounded square */
+      background:var(--btn-bg); color:var(--fg);
     }
 
-    /* Header */
-    .head{
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .title{
-      font-weight:800; letter-spacing:.08em; font-size: clamp(20px, 3.8vw, 28px);
+    #themeIcon{ width:28px; height:28px; display:block; }
+
+    /* ------------------------------
+       6) Spacer to aid tall screens
+       ------------------------------ */
+    .spacer{ flex:1 1 auto; }
+
+    /* ------------------------------
+       7) Animations (motion-only) & reduced-motion
+       ------------------------------ */
+    @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+    @keyframes jiggle{ 0%,100%{ transform:rotate(0) } 25%{ transform:rotate(-2deg) } 75%{ transform:rotate(2deg) } }
+    @keyframes pop{ 0%{ transform:scale(1) } 50%{ transform:scale(1.075) } 100%{ transform:scale(1) } }
+
+    .shake{ animation: shake .22s linear; }
+    .jiggle{ animation: jiggle .26s ease-in-out; }
+    .pop{ animation: pop .6s ease; }
+    /* Soft variants */
+    @keyframes shakeSoft{ 0%,100%{ transform:translateX(0) } 20%{ transform:translateX(-3px) } 40%{ transform:translateX(3px) } 60%{ transform:translateX(-2px) } 80%{ transform:translateX(2px) } }
+    .shake-soft{ animation: shakeSoft .22s linear; }
+
+    @keyframes popSoft{ 0%{ transform:scale(1) } 50%{ transform:scale(1.03) } 100%{ transform:scale(1) } }
+    .pop-soft{ animation: popSoft .45s ease; }
+
+    /* Performance hints for smooth transforms */
+    .row > .tile, .bank > .btn-letter { will-change: transform; contain: layout paint; }
+    @media (prefers-reduced-motion: reduce){
+      .shake, .jiggle, .pop{ animation-duration: .01s; }
+      .timer-fill{ transition: none; }
     }
 
-    /* Status row */
-    .status{
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .lives{
-      display:flex; gap:8px;
-    }
-    .pip{
-      width:14px; height:14px; border-radius:4px;
-      border:1px solid var(--border); background: currentColor; color: var(--fg);
-    }
-    .pip.off{
-      background: transparent; color: var(--track);
-    }
-    .score{
-      font-weight:600; opacity:.9; font-size: clamp(14px, 2.9vw, 16px);
-    }
-
-    /* Timer */
-    .timer-card{
-      border:1px solid var(--border); border-radius: var(--radius);
-      padding:8px 10px;
-    }
-    .timer-rail{
-      position:relative; height:10px; border-radius:999px; background:var(--track);
-      overflow:hidden;
-    }
-    .timer-fill{
-      position:absolute; inset:0 0 0 0; transform-origin:left center;
-      transform:scaleX(1);
-      background: currentColor; color: var(--fg);
-    }
-    .timer-meta{
-      margin-top:8px; display:flex; align-items:center; justify-content:space-between;
-      font-size:14px; color:var(--muted);
-    }
-
-    /* Tiles (answer row) */
-    .answer{
-      display:grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap);
-    }
-    .tile{
-      display:grid; place-items:center;
-      aspect-ratio:1/1; border-radius: var(--radius);
-      border:1px solid var(--border);
-      background:var(--tile-bg); color:var(--tile-fg);
-      font-weight:800; font-size: clamp(22px, 8.2vw, 44px);
-      text-transform:uppercase;
-    }
-    .tile.empty{ opacity:.45 }
-
-    /* Bank */
-    .bank{
-      display:grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap);
-    }
-    .btn-letter{
-      display:grid; place-items:center;
-      height: clamp(52px, 11.2vw, 76px);
-      border-radius: var(--radius);
-      border:1px solid var(--border);
-      background:var(--btn-bg); color:var(--btn-fg);
-      font-weight:800; font-size: clamp(20px, 7vw, 38px);
-      text-transform:uppercase;
-      transition: transform .06s ease;
-    }
-    .btn-letter:disabled{ opacity:.35 }
-    .press{ transform: scale(.96) }
-
-    /* Controls */
-    .controls{
-      display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap);
-    }
-    .btn{
-      height: 52px; border-radius: var(--radius);
-      border:1px solid var(--border);
-      background:var(--btn-bg); color:var(--btn-fg);
-      font-weight:700; font-size:16px;
-      transition: transform .06s ease;
-    }
-    .btn.press{ transform: scale(.98) }
-
-    /* Theme button (bottom-right) */
-    .theme-wrap{ display:flex; justify-content:flex-end; }
-    .theme{
-      width:44px; height:44px; border-radius:50%;
-      display:grid; place-items:center;
-      border:1px solid var(--border); background:var(--btn-bg); color:var(--btn-fg);
-    }
-    .theme svg{ width:24px; height:24px; display:block }
-
-    /* Modal */
-    .overlay{
-      position:fixed; inset:0; background:rgba(0,0,0,.5);
-      display:none;
-    }
+    /* ------------------------------
+       8) Modals (Intro, Game Over, Loading/Retry)
+       ------------------------------ */
+    .overlay{ position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; }
     .overlay[aria-hidden="false"]{ display:block; }
-    .dialog{
-      position:fixed; inset:0; display:grid; place-items:center;
-      padding: 20px;
-      pointer-events:none;
-    }
-    .dialog[aria-hidden="false"]{ pointer-events:auto; }
-    .panel{
-      width: min(480px, calc(100vw - 28px));
-      background:var(--bg); color:var(--fg);
-      border:1px solid var(--border); border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: none;
-    }
-    .panel h2{ margin:0 0 8px 0; font-size:20px }
-    .panel .body{ color: var(--fg); opacity:.9; line-height:1.35 }
-    .panel .actions{ margin-top:16px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap }
-    .panel .actions button{
-      border:1px solid var(--border); border-radius:12px; padding:10px 14px;
-      background:var(--btn-bg); color:var(--btn-fg); font-weight:700;
-    }
+    .dialog{ position:fixed; inset:0; display:none; place-items:center; }
+    .dialog[aria-hidden="false"]{ display:grid; pointer-events:auto; }
+    .card{ width:min(92vw, 520px); background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow:none; }
+    .card h2{ margin:0 0 10px; letter-spacing:.06em; }
+    .card p{ margin:.5rem 0; color:var(--muted); }
+    .card .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+    .controls button{ font-weight:700; }
+    .card .actions button{ font-weight:700; }
 
-    /* A11y helpers */
-    .sr-only{ position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden }
-
-    /* Animations */
-    @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)} }
-    @keyframes shakeSoft{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-2px)} 75%{transform:translateX(2px)} }
-    @keyframes jiggle{ 0%,100%{transform:rotate(0)} 25%{transform:rotate(-1deg)} 75%{transform:rotate(1deg)} }
-    @keyframes pop{ 0%{transform:scale(1)} 30%{transform:scale(1.08)} 100%{transform:scale(1)} }
-    .shake{ animation:shake .32s ease }
-    .shake-soft{ animation:shakeSoft .32s ease }
-    .jiggle{ animation:jiggle .28s ease }
-    .pop{ animation:pop .28s ease }
-    .pop-soft{ animation:pop .18s ease }
+    /* ------------------------------
+       9) Visually-hidden for a11y
+       ------------------------------ */
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   </style>
 </head>
 <body>
-  <main id="app" aria-label="JUMBL word game">
-    <header class="head">
-      <div class="title" aria-label="Game title">JUMBL</div>
+  <div id="app" class="app" aria-live="polite">
+    <!-- Header -->
+    <header class="header">
+      <div></div>
+      <div class="title" aria-hidden="true">JUMBL</div>
+      <div></div>
     </header>
 
-    <section class="status" aria-label="Status">
-      <div id="lives" class="lives" aria-label="Lives"></div>
-      <div id="score" class="score" aria-live="polite">Score: 0</div>
-    </section>
+    <!-- Lives -->
+    <div id="lives" class="lives" aria-label="Lives" aria-live="polite"></div>
+    <!-- Score -->
+    <div id="score" class="score" aria-live="polite">Score: 0</div>
 
-    <section class="timer-card" aria-label="Timer">
-      <div class="timer-rail" aria-hidden="true">
+    <!-- Timer -->
+    <section class="timer-card">
+      <div id="timerRail" class="timer-rail" role="progressbar" aria-label="Time remaining (seconds)" aria-valuemin="0" aria-valuemax="25" aria-valuenow="25">
         <div id="timerFill" class="timer-fill"></div>
       </div>
-      <div class="timer-meta">
-        <div id="timerLabel">00:25</div>
-        <div class="sr-only" id="sr-seconds" aria-live="polite"></div>
-        <div class="muted">Beat the clock</div>
-      </div>
+      <span id="srSeconds" class="sr-only" aria-live="polite"></span>
     </section>
 
-    <section class="answer" id="answerRow" aria-label="Answer row (fill left to right)"></section>
-    <section class="bank" id="bankRow" aria-label="Letter bank"></section>
+    <!-- Answer row above Letter bank -->
+    <section id="answerRow" class="row" aria-label="Your guess"></section>
+    <section id="bank" class="bank" aria-label="Letter bank"></section>
 
-    <section class="controls" aria-label="Controls">
-      <button id="shuffleBtn" class="btn" type="button" aria-label="Shuffle letters">Shuffle</button>
-      <button id="clearBtn"   class="btn" type="button" aria-label="Clear all">Clear</button>
-    </section>
-
-    <div class="theme-wrap">
-      <button id="themeBtn" class="theme" type="button" aria-label="Toggle theme">
-        <svg id="themeIcon" aria-hidden="true"></svg>
-      </button>
+    <!-- Controls -->
+    <div class="controls">
+      <button id="shuffleBtn" type="button" aria-label="Shuffle letters">Shuffle</button>
+      <button id="clearBtn" type="button" aria-label="Clear all">Clear</button>
     </div>
 
-    <!-- A11y live region for granular messages -->
-    <div class="sr-only" id="announcer" aria-live="polite"></div>
-  </main>
+    <div class="theme-bottom">
+      <button id="themeBtn" class="icon" aria-label="Toggle theme" title="Toggle theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
+      </button>
+    </div>
+    <div class="spacer" aria-hidden="true"></div>
 
-  <!-- Modal elements -->
+    <!-- A11y announcer for granular updates (letters placed, etc.) -->
+    <div id="announcer" class="sr-only" aria-live="polite"></div>
+  </div>
+
+  <!-- Overlay + Dialog (reused for all modals) -->
   <div id="overlay" class="overlay" aria-hidden="true"></div>
-  <div id="dialog" class="dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
-    <div class="panel">
-      <h2 id="dialogTitle">Title</h2>
-      <div id="dialogBody" class="body"></div>
-      <div id="dialogActions" class="actions"></div>
+  <div id="dialog" class="dialog" aria-hidden="true" aria-modal="true" role="dialog" aria-labelledby="dialogTitle">
+    <div class="card" role="document">
+      <h2 id="dialogTitle"></h2>
+      <div id="dialogBody"></div>
+      <div class="actions" id="dialogActions"></div>
     </div>
   </div>
 
   <script>
-  (function(){
-    /* ------------------------------
-       1) Fast DOM helpers
-       ------------------------------ */
-    const $ = (sel, root=document) => root.querySelector(sel);
+  (()=>{
+    "use strict";
 
     /* ------------------------------
-       2) Constants
+       1) Constants / State
        ------------------------------ */
     const COUNTDOWN_SECONDS = 25;
     const STARTING_LIVES = 3;
     const TICK_MS = 100;
 
-    /* ------------------------------
-       3) State
-       ------------------------------ */
+    let ANSWER_POOL = [];
+    let GUESSES_SET = new Set();
+
     const state = {
       answerWord: "",
-      bank: [],                  // [{ch, used}]
-      current: ["","","","",""], // answer slots
-      placedIndex: [null,null,null,null,null], // which bank index filled each slot
+      bank: /** @type {{ch:string, used:boolean}[]} */([]),
+      current: ["","","","",""],
+      placedIndex: [null,null,null,null,null],
       lives: STARTING_LIVES,
       score: 0,
       runStartAt: 0,
       deadlineAt: 0,
       timerHandle: null,
       isAnimating: false,
-      modalOpen: false
+      modalOpen: false,
     };
 
-    let ANSWER_POOL = [];
-    let GUESSES_SET = new Set();
-
     /* ------------------------------
-       4) Grab elements
+       2) DOM helpers
        ------------------------------ */
+    const $ = (sel, root=document) => root.querySelector(sel);
     const app = $("#app");
     const livesEl = $("#lives");
     const scoreEl = $("#score");
+    const timerRail = $("#timerRail");
     const timerFill = $("#timerFill");
-    const timerLabel = $("#timerLabel");
-    const srSeconds = $("#sr-seconds");
+    const srSeconds = $("#srSeconds");
+    let lastSpokenSecs = null;
     const answerRow = $("#answerRow");
-    const bankRow = $("#bankRow");
+    const bankRow = $("#bank");
+    const announcer = $("#announcer");
     const shuffleBtn = $("#shuffleBtn");
     const clearBtn = $("#clearBtn");
     const themeBtn = $("#themeBtn");
+
     const overlay = $("#overlay");
     const dialog = $("#dialog");
     const dialogTitle = $("#dialogTitle");
     const dialogBody = $("#dialogBody");
     const dialogActions = $("#dialogActions");
-    const announcer = $("#announcer");
 
     /* ------------------------------
-       5) Theme (persist localStorage)
+       3) Viewport var --vw updates
+       ------------------------------ */
+       function setVW(){
+        const vv = window.visualViewport;
+        const w = (vv ? vv.width  : window.innerWidth)  || window.innerWidth;
+        const h = (vv ? vv.height : window.innerHeight) || window.innerHeight;
+        // Round to whole pixels to avoid sub-pixel overflow/bleed on older iOS
+        document.documentElement.style.setProperty('--vw', Math.round(w) + 'px');
+        document.documentElement.style.setProperty('--vh', Math.round(h) + 'px');
+      }
+    setVW();
+    if(window.visualViewport){
+      visualViewport.addEventListener('resize', setVW);
+      visualViewport.addEventListener('scroll', setVW);
+    }
+    window.addEventListener('orientationchange', setVW);
+    window.addEventListener('resize', setVW);
+    window.addEventListener('pageshow', setVW);
+    if(window.visualViewport){
+      visualViewport.addEventListener('resize', syncControlHeights);
+    }
+    window.addEventListener('resize', syncControlHeights);
+
+   /* ------------------------------
+   3b) Kill pinch/double-tap zoom within the app
+   ------------------------------ */
+  (function preventZoom(){
+    // Safari fires non-standard gesture events for pinch
+    ['gesturestart','gesturechange','gestureend'].forEach(type=>{
+      app.addEventListener(type, (e)=> e.preventDefault(), { passive:false });
+    });
+
+    // Block two-finger pinch on other engines
+    app.addEventListener('touchstart', (e)=>{
+      if(e.touches.length > 1) e.preventDefault();
+    }, { passive:false });
+
+    // Block iOS double-tap-to-zoom (quick second tap)
+    let lastTouchEnd = 0;
+    app.addEventListener('touchend', (e)=>{
+      const now = Date.now();
+      if(now - lastTouchEnd < 350){ e.preventDefault(); }
+      lastTouchEnd = now;
+    }, { passive:false });
+  })();
+
+    /* ------------------------------
+       4) Theme (persist localStorage)
        ------------------------------ */
     const THEME_KEY = 'jumbl-theme';
     function applyTheme(t){ document.documentElement.classList.toggle('dark', t === 'dark'); updateThemeIcon(); }
     function getSystemTheme(){ return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
     function initTheme(){ applyTheme(localStorage.getItem(THEME_KEY) || getSystemTheme()); }
-    function toggleTheme(){
-      const isDark = document.documentElement.classList.toggle('dark');
-      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-      updateThemeIcon();
-    }
+    function toggleTheme(){ const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light'); updateThemeIcon(); }
     function updateThemeIcon(){
       const isDark = document.documentElement.classList.contains('dark');
       const svg = $("#themeIcon");
@@ -335,40 +372,47 @@
     makeTap(themeBtn, toggleTheme);
 
     /* ------------------------------
-       6) Utilities
+       5) Utilities
        ------------------------------ */
     const randInt = n => Math.floor(Math.random()*n);
     function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j = randInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
     function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-
     const ANIM_CLASSES = ['shake','shake-soft','jiggle','pop','pop-soft'];
     function play(el, cls){
-      if(!el) return;
-      ANIM_CLASSES.forEach(c => el.classList.remove(c));
-      // Force reflow to restart CSS animations
-      // eslint-disable-next-line no-unused-expressions
-      el.offsetHeight;
-      el.classList.add(cls);
+      // remove any prior animation classes
+      for(const c of ANIM_CLASSES) el.classList.remove(c);
+      // restart next frame (avoids forced synchronous layout)
+      requestAnimationFrame(()=>{
+        el.classList.add(cls);
+        el.addEventListener('animationend', ()=> el.classList.remove(cls), { once:true });
+      });
     }
-
     function normalizeList(text){
-      const out = []; const seen = new Set();
-      text.split(/\r?\n/).forEach(line=>{
+      // strip BOM
+      if(text.charCodeAt(0) === 0xFEFF){ text = text.slice(1); }
+      const seen = new Set();
+      const out = [];
+      text.split(/\r?\n|\r/).forEach(line=>{
         const s = line.trim().toUpperCase();
         if(/^[A-Z]{5}$/.test(s) && !seen.has(s)){ seen.add(s); out.push(s); }
       });
       return out;
     }
-    function pickAnswer(){ return ANSWER_POOL[randInt(ANSWER_POOL.length)]; }
+
+    function pickAnswer(){
+      return ANSWER_POOL[randInt(ANSWER_POOL.length)];
+    }
+
     function buildBankFrom(word){
       const arr = word.split("").map(ch=>({ ch, used:false }));
       return shuffleInPlace(arr);
     }
+
     function secondsSince(ts){ return Math.floor((Date.now()-ts)/1000); }
     function fmtMMSS(total){ const m = Math.floor(total/60).toString().padStart(2,'0'); const s = (total%60).toString().padStart(2,'0'); return `${m}:${s}`; }
 
     /* ------------------------------
-       7) Rendering
+       6) Rendering
        ------------------------------ */
     function renderLives(){
       const frag = document.createDocumentFragment();
@@ -379,23 +423,25 @@
       }
       livesEl.innerHTML = '';
       livesEl.appendChild(frag);
+      livesEl.setAttribute('aria-label', `Lives: ${state.lives} of ${STARTING_LIVES}`);
     }
+
     function renderScore(){ scoreEl.textContent = `Score: ${state.score}`; }
-    let lastSpokenSecs = -1;
+
     function renderTimer(){
       const now = performance.now();
-      const msLeft = Math.max(0, state.deadlineAt - now);
-      const secs = Math.ceil(msLeft/1000);
-      const frac = clamp(msLeft/(COUNTDOWN_SECONDS*1000), 0, 1);
-      timerFill.style.transform = `scaleX(${frac})`;
-      timerLabel.textContent = fmtMMSS(Math.ceil(msLeft/1000));
-
-      // SR speak at most once per second
+      const remain = clamp(state.deadlineAt - now, 0, COUNTDOWN_SECONDS*1000);
+      const ratio = remain / (COUNTDOWN_SECONDS*1000);
+      timerFill.style.transform = `scaleX(${ratio})`; // right->left via transform-origin:left
+      const secs = Math.round(remain/1000);
+      timerRail.setAttribute('aria-valuenow', String(secs));
+      // Speak at most once per second
       if (secs !== lastSpokenSecs) {
         srSeconds.textContent = `${secs} seconds remaining`;
         lastSpokenSecs = secs;
       }
     }
+
     function renderAnswer(){
       const frag = document.createDocumentFragment();
       for(let i=0;i<5;i++){
@@ -409,6 +455,7 @@
       answerRow.innerHTML = '';
       answerRow.appendChild(frag);
     }
+
     function renderBank(){
       const frag = document.createDocumentFragment();
       state.bank.forEach((b, idx)=>{
@@ -425,8 +472,13 @@
       bankRow.appendChild(frag);
       syncControlHeights();
     }
+
     function renderUI(){
-      renderLives(); renderScore(); renderTimer(); renderAnswer(); renderBank();
+      renderLives();
+      renderScore();
+      renderTimer();
+      renderAnswer();
+      renderBank();
     }
     function syncControlHeights(){
       const tile = bankRow.querySelector('.btn-letter');
@@ -438,7 +490,7 @@
     }
 
     /* ------------------------------
-       8) Timer control
+       7) Timer control
        ------------------------------ */
     function startTimer(){
       stopTimer();
@@ -452,7 +504,7 @@
     function stopTimer(){ if(state.timerHandle){ clearInterval(state.timerHandle); state.timerHandle = null; } }
 
     /* ------------------------------
-       9) Core game flow
+       8) Core game flow
        ------------------------------ */
     function startRun(){
       state.lives = STARTING_LIVES;
@@ -460,6 +512,7 @@
       state.runStartAt = Date.now();
       nextWord(false);
     }
+
     function nextWord(increment){
       if(increment) state.score++;
       state.answerWord = pickAnswer();
@@ -470,12 +523,13 @@
       renderUI();
       startTimer();
     }
+
     function onTimeout(){
       if(state.timerHandle === null) return; // already handled
       stopTimer();
       state.lives = Math.max(0, state.lives - 1);
       renderLives();
-      // Reveal the correct word, shake, then advance or game over
+      // Reveal the correct word in answer row, shake, then advance or game over
       state.isAnimating = true;
       for(let i=0;i<5;i++){ state.current[i] = state.answerWord[i]; }
       renderAnswer();
@@ -487,59 +541,59 @@
       }, 800);
     }
 
-    /* ------------------------------
-       10) Input: letters, clear, shuffle, backspace
-       ------------------------------ */
-    function onLetterTap(idx){
+    function onLetterTap(bankIndex){
       if(state.isAnimating || state.modalOpen) return;
-      // find first empty slot
-      const slot = state.current.findIndex(c => !c);
-      if(slot === -1) return;
-      const b = state.bank[idx];
+      const idx = state.placedIndex.indexOf(null); // next empty slot
+      if(idx === -1) return; // full
+      const b = state.bank[bankIndex];
       if(!b || b.used) return;
-
-      state.current[slot] = b.ch;
-      state.placedIndex[slot] = idx;
       b.used = true;
-
-      renderAnswer(); renderBank();
-
-      const slotEl = answerRow.children[slot];
+      state.current[idx] = b.ch;
+      state.placedIndex[idx] = bankIndex;
+      renderAnswer();
+      renderBank();
+      announcer.textContent = `Placed ${b.ch} in slot ${idx+1}`;
+      // slot pop (soft) — only the tile we just filled
+      const slotEl = answerRow.children[idx];
       if (slotEl) play(slotEl, 'pop-soft');
-
       autoSubmitIfFull();
     }
+
     function onShuffle(){
       if(state.isAnimating || state.modalOpen) return;
       // shuffle only unused letters
-      const unused = [], unusedIdx = [];
+      const unused = [];
+      const unusedIdx = [];
       state.bank.forEach((b, i)=>{ if(!b.used){ unused.push(b); unusedIdx.push(i); } });
       shuffleInPlace(unused);
       unusedIdx.forEach((slot, j)=>{ state.bank[slot] = unused[j]; });
       renderBank();
       play(bankRow, 'jiggle');
     }
-    // Remove rightmost placed letter and return it to the bank
+
+    /* NEW — remove the rightmost placed letter and return it to the bank */
     function onBackspace(opts = { animate: true }){
       if (state.isAnimating || state.modalOpen) return;
       // find rightmost non-empty slot
       let i = -1;
       for (let j = 4; j >= 0; j--) { if (state.current[j]) { i = j; break; } }
-      if (i === -1) return;
-
+      if (i === -1) return; // nothing to remove
       // restore bank letter that originally filled this slot
       const bi = state.placedIndex[i];
-      if (bi !== null) state.bank[bi].used = false;
-
+      if (bi !== null) { state.bank[bi].used = false; }
+      // clear the slot
       state.current[i] = "";
       state.placedIndex[i] = null;
-
-      renderAnswer(); renderBank();
-
-      if (opts.animate){
+      // re-render UI
+      renderAnswer();
+      renderBank();
+      // small feedback on the slot we edited
+      if (opts.animate) {
         const slotEl = answerRow.children[i];
         if (slotEl) play(slotEl, 'shake-soft');
       }
+      // a11y announce
+      announcer.textContent = `Removed letter from slot ${i+1}`;
     }
 
     function onClearAll(opts = { animate: true, force: false }){
@@ -556,9 +610,12 @@
         state.current[i] = "";
         state.placedIndex[i] = null;
       }
-      renderAnswer(); renderBank();
-
-      if (opts.animate){ play(answerRow, 'shake-soft'); }
+      renderAnswer();
+      renderBank();
+      // animate clear only if requested (prevents double-shake on invalid)
+      if (opts.animate){
+        play(answerRow, 'shake-soft');
+      }
     }
 
     function autoSubmitIfFull(){
@@ -566,9 +623,10 @@
         evaluateGuess(state.current.join(''));
       }
     }
+
     function evaluateGuess(guess){
       if (GUESSES_SET.has(guess)) {
-        // Correct (per spec: any valid 5-letter dictionary word advances)
+        // Correct: soft-pop the bar + pop each tile in sync
         stopTimer();
         state.isAnimating = true;
         play(answerRow, 'pop-soft');
@@ -583,89 +641,96 @@
       // Invalid: shake, then clear — robust on older iOS
       state.isAnimating = true;
       play(answerRow, 'shake');
-
       let cleared = false;
       const finish = () => {
         if (cleared) return;
         cleared = true;
         answerRow.removeEventListener('animationend', finish);
-        onClearAll({ animate: false, force: true }); // clear during anim
+        onClearAll({ animate: false, force: true }); // <— force clears during animation
         state.isAnimating = false;
       };
       // Prefer animationend, but also guard with a timeout
-      answerRow.addEventListener('animationend', finish, { once:true });
-      setTimeout(finish, 400);
+      answerRow.addEventListener('animationend', finish, { once: true });
+      setTimeout(finish, 320); // ~.22s shake + buffer
     }
 
-    /* Pointer-driven letter taps (press feedback) */
-    bankRow.addEventListener('pointerdown', (e)=>{
-      const t = e.target;
-      if(!(t instanceof HTMLElement)) return;
-      if(!t.classList.contains('btn-letter')) return;
-      if (t.disabled) return;
-      t.classList.add('press');
-      // capture so we always get the matching pointerup/cancel
-      if (typeof t.setPointerCapture === 'function') {
-        try { t.setPointerCapture(e.pointerId); } catch {}
-      }
-    });
-    bankRow.addEventListener('pointerup', (e)=>{
-      const t = e.target;
-      if(!(t instanceof HTMLElement)) return;
-      if(!t.classList.contains('btn-letter')) return;
-      t.classList.remove('press');
-      if (t.disabled) return; // might have been disabled mid-press
-      const idx = Number(t.dataset.idx);
-      onLetterTap(idx);
-    });
-    bankRow.addEventListener('pointercancel', (e)=>{
-      const t = e.target;
-      if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
-        t.classList.remove('press');
-      }
-    });
-    bankRow.addEventListener('pointerleave', (e)=>{
-      const t = e.target;
-      if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
-        t.classList.remove('press');
-      }
-    });
-
-    /* Buttons: stay "pressed" while held; pop back on pointerup, then run action */
-    function makeTap(btn, handler){
-      btn.addEventListener('pointerdown', () => btn.classList.add('press'));
-      btn.addEventListener('pointerup',   () => { btn.classList.remove('press'); handler(); });
-      btn.addEventListener('pointercancel', () => btn.classList.remove('press'));
-      btn.addEventListener('pointerleave',  () => btn.classList.remove('press'));
+    function gameOver(){
+      stopTimer();
+      showModal('GAME OVER',
+        `<p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>`,
+        [ {label:'Again', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]
+      );
     }
-    makeTap(shuffleBtn, onShuffle);
-    makeTap(clearBtn, onClearAll);
 
-    /* Keyboard support (desktop) */
+    /* ------------------------------
+       9) Events — clicks & keyboard
+       ------------------------------ */
+      // Letter taps: show press while held; commit on release
+      bankRow.addEventListener('pointerdown', (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(!t.classList.contains('btn-letter')) return;
+        if (t.disabled) return;
+        t.classList.add('press');
+        // capture so we always get the matching pointerup/cancel
+        if (typeof t.setPointerCapture === 'function') {
+          try { t.setPointerCapture(e.pointerId); } catch {}
+        }
+      });
+
+      bankRow.addEventListener('pointerup', (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(!t.classList.contains('btn-letter')) return;
+        t.classList.remove('press');
+        if (t.disabled) return; // might have been disabled mid-press
+        const idx = Number(t.dataset.idx);
+        onLetterTap(idx);
+      });
+
+      bankRow.addEventListener('pointercancel', (e)=>{
+        const t = e.target;
+        if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
+          t.classList.remove('press');
+        }
+      });
+
+      bankRow.addEventListener('pointerleave', (e)=>{
+        const t = e.target;
+        if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
+          t.classList.remove('press');
+        }
+      });
+
+      // Buttons: stay "pressed" while held; pop back on pointerup, then run action
+      function makeTap(btn, handler){
+        if(!btn) return;
+        btn.addEventListener('pointerdown', () => btn.classList.add('press'));
+        btn.addEventListener('pointerup',   () => { btn.classList.remove('press'); handler(); });
+        btn.addEventListener('pointercancel', () => btn.classList.remove('press'));
+        btn.addEventListener('pointerleave',  () => btn.classList.remove('press'));
+      }
+
+      makeTap(shuffleBtn, onShuffle);
+      makeTap(clearBtn,   () => onClearAll({ animate: true }));
+      makeTap(answerRow, () => onBackspace({ animate: true }));
+
     document.addEventListener('keydown', (e)=>{
-      if(state.modalOpen) return;
-      if(e.key === 'Backspace'){ e.preventDefault(); onBackspace(); return; }
-      if(e.key === 'Enter'){
-        if(state.current.every(Boolean)) evaluateGuess(state.current.join(''));
-        return;
-      }
-      const ch = e.key.toUpperCase();
-      if(/^[A-Z]$/.test(ch)){
+      if(state.modalOpen || state.isAnimating) return;
+      const k = e.key;
+      if(k === ' '){ e.preventDefault(); onShuffle(); return; }
+      if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClearAll(); return; }
+      if(k.length === 1){
+        const ch = k.toUpperCase();
+        if(ch < 'A' || ch > 'Z') return;
+        // find leftmost matching UNUSED bank letter
         const i = state.bank.findIndex(b => !b.used && b.ch === ch);
         if(i !== -1){ onLetterTap(i); }
       }
     }, true);
 
-    /* Prevent double-tap zoom on iOS */
-    let lastTouchEnd = 0;
-    app.addEventListener('touchend', (e)=>{
-      const now = Date.now();
-      if(now - lastTouchEnd < 350){ e.preventDefault(); }
-      lastTouchEnd = now;
-    }, { passive:false });
-
     /* ------------------------------
-       11) Modals (reusable) + focus mgmt
+       10) Modals (reusable) + focus mgmt
        ------------------------------ */
     let restoreFocusEl = null;
     function showModal(title, bodyHTML, actions){
@@ -675,7 +740,7 @@
       dialogTitle.textContent = title;
       dialogBody.innerHTML = bodyHTML;
       dialogActions.innerHTML = '';
-      (actions || []).forEach(a=>{
+      actions.forEach(a=>{
         const b = document.createElement('button');
         b.type = 'button';
         b.textContent = a.label;
@@ -686,24 +751,23 @@
       restoreFocusEl = document.activeElement;
       const firstBtn = dialogActions.querySelector('button') || dialog.querySelector('button');
       if(firstBtn) firstBtn.focus();
-
       // basic trap
       dialog.addEventListener('keydown', trapTab);
       document.addEventListener('keydown', escClose);
+      app.setAttribute('aria-hidden','true');
     }
     function closeModal(){
       state.modalOpen = false;
       overlay.setAttribute('aria-hidden','true');
       dialog.setAttribute('aria-hidden','true');
-      dialogBody.innerHTML = '';
-      dialogActions.innerHTML = '';
       dialog.removeEventListener('keydown', trapTab);
       document.removeEventListener('keydown', escClose);
-      if(restoreFocusEl && restoreFocusEl instanceof HTMLElement){ restoreFocusEl.focus(); }
+      app.removeAttribute('aria-hidden');
+      if(restoreFocusEl && restoreFocusEl.focus) restoreFocusEl.focus();
     }
     function trapTab(e){
       if(e.key !== 'Tab') return;
-      const focusables = dialog.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
+      const focusables = dialog.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
       if(!focusables.length) return;
       const first = focusables[0]; const last = focusables[focusables.length-1];
       if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
@@ -715,6 +779,7 @@
       const retryBtn = { label:'Retry', action:()=>{ closeModal(); loadWordLists(); }, isPrimary:true };
       showModal('Loading word lists…', `<p>${msg}</p>`, canRetry ? [retryBtn] : []);
     }
+
     function showIntro(){
       const body = `
         <p>Un-JUMBL the letters to make a 5-letter word.</p>
@@ -724,19 +789,9 @@
         <p>Highest score wins.</p>`;
       showModal('RULES', body, [ {label:'Play', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]);
     }
-    function showError(title, html){ showModal(title, html, [ {label:'OK', action:()=>closeModal(), isPrimary:true} ]); }
-    function gameOver(){
-      const body = `
-        <p>Your final score is <strong>${state.score}</strong>.</p>
-        <p>Play again?</p>`;
-      showModal('Game Over', body, [
-        { label:'Cancel', action:()=>closeModal() },
-        { label:'Play again', action:()=>{ closeModal(); startRun(); }, isPrimary:true }
-      ]);
-    }
 
     /* ------------------------------
-       12) Data loading & validation
+       11) Data loading & validation
        ------------------------------ */
     async function loadWordLists(){
       showLoading('Fetching…', false);
@@ -756,28 +811,23 @@
         const gSet = new Set(guesses);
         const missing = answers.filter(w => !gSet.has(w));
         if(missing.length){
-          showModal(
-            'Error in word lists',
-            `<p>All answers must also appear in <code>guesses.txt</code>.</p>
-             <p>Missing ${missing.length} entries. Example: <code>${missing.slice(0,5).join(', ')}</code></p>`,
-            [ {label:'Retry', action:()=>{ closeModal(); loadWordLists(); }, isPrimary:true} ]
-          );
+          showModal('Error in word lists', `<p>All answers must also appear in <code>guesses.txt</code>.</p><p>Missing ${missing.length} entries. Example: <code>${missing.slice(0,5).join(', ')}</code></p>`, [ {label:'Retry', action:()=>{ closeModal(); loadWordLists(); }, isPrimary:true} ]);
           return;
         }
-        ANSWER_POOL = answers;
-        GUESSES_SET = gSet;
+        ANSWER_POOL = answers;        // answer source
+        GUESSES_SET = gSet;           // in-game dictionary: any 5-letter guess found here counts as correct
         closeModal();
+        // After lists load, show Intro
         showIntro();
       }catch(err){
-        showLoading('Could not load files. Check server and try again.', true);
+        console.error(err);
+        showLoading('Error loading word lists. Please try again.', true);
       }
     }
 
     /* ------------------------------
-       13) Wire up
+       12) Boot
        ------------------------------ */
-    makeTap(shuffleBtn, onShuffle);
-    makeTap(clearBtn, onClearAll);
     initTheme();
     loadWordLists();
   })();
