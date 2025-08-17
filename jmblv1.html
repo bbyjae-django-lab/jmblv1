@@ -66,7 +66,9 @@
     :focus{ outline: auto; }
     :focus:not(:focus-visible){ outline: none; }
     a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-    html, body, #app{ touch-action: none; }
+    /* Only disable browser gestures inside gameplay; leave the modal free */
+    #app{ touch-action: none; }
+    .dialog, .dialog *{ touch-action: manipulation; }
     button{
       font:inherit; color:inherit;
       background:var(--btn-bg);
@@ -115,6 +117,13 @@
       inset: 0;
       pointer-events: none;
       z-index: 0;
+
+      /* Stacking order: background → app → overlay → dialog */
+      .bg-art{ z-index: 0; }             /* already fixed-positioned */
+      .app{ position: relative; z-index: 10; }
+      .overlay{ z-index: 20; }
+      .dialog{ z-index: 30; pointer-events: auto; }
+
 
       /* layered backgrounds: gradient sky + subtle banding stripes */
       background-image:
@@ -809,12 +818,38 @@
 
     // Buttons (taps and keyboard keys): stay "pressed" while held; pop back on pointerup, then run action
     function makeTap(btn, handler){
-      if(!btn) return;
-      btn.addEventListener('pointerdown', () => btn.classList.add('press'));
-      btn.addEventListener('pointerup', () => { btn.classList.remove('press'); handler(); });
-      btn.addEventListener('pointercancel', () => btn.classList.remove('press'));
-      btn.addEventListener('pointerleave', () => btn.classList.remove('press'));
-    }
+    if(!btn) return;
+    let fired = false;
+    const run = (e)=>{
+      if(fired) return;
+      fired = true;
+      try{ handler(e); } finally {
+        // reset on next tick to avoid double-fire when both pointerup+click arrive
+        setTimeout(()=>{ fired = false; }, 0);
+      }
+    };
+
+    btn.addEventListener('pointerdown', (e)=>{
+      btn.classList.add('press');
+      if (typeof btn.setPointerCapture === 'function') {
+        try { btn.setPointerCapture(e.pointerId); } catch {}
+      }
+    });
+
+    btn.addEventListener('pointerup', (e)=>{
+      btn.classList.remove('press');
+      run(e);
+    });
+
+    btn.addEventListener('pointercancel', ()=> btn.classList.remove('press'));
+    btn.addEventListener('pointerleave',  ()=> btn.classList.remove('press'));
+
+    // Fallback for browsers that don’t deliver pointer events reliably
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault(); // avoid double-run with pointerup
+      run(e);
+    });
+  }
 
     makeTap(shuffleBtn, onShuffle);
     makeTap(clearBtn, () => onClearAll({ animate: true }));
