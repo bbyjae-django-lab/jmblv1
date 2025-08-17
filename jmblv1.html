@@ -34,10 +34,8 @@
     :focus:not(:focus-visible){ outline: none; }
     a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     html, body, #app{ touch-action: none; }
-
     button{ font:inherit; color:inherit; background:var(--btn-bg); border:1px solid var(--border); border-radius: var(--radius); padding:1rem 1rem; cursor:pointer; }
     button:disabled{ opacity:.35; cursor: default; }
-
     /* Disable text selection/callouts inside the play area */
     .app, .app *:not(input):not(textarea){
       -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
@@ -50,7 +48,7 @@
     /* ------------------------------
        1) App shell & safe-area insets
        ------------------------------ */
-       .app{
+      .app{
         /* Use visualViewport width (via --vw) to avoid iOS rounding bleed */
         width: min(calc(var(--vw, 100vw)), var(--maxw));
 
@@ -77,7 +75,7 @@
     .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
     .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:3.5em; }
     .theme-wrap{ justify-self:end; }
-    .icon{ width:28px; height:28px; display:block; }
+    .icon{ width:28px; height:28px; display:block; } /* was 22px */
     .icon svg{ width:100%; height:100%; display:block; }
     .theme-bottom{ display:flex; justify-content:center; }
 
@@ -95,6 +93,7 @@
     .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
     .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
 
+    /* spacing tweaks for single-hand reach */
     .header{ margin-top: 36px; margin-bottom: 26px; }
     .lives{  margin-bottom: 4px; }
     .score{  margin-top: 4px; margin-bottom: 4px; }
@@ -127,11 +126,7 @@
     /* ------------------------------
        5) Controls
        ------------------------------ */
-       .controls{
-        display:grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--gap);
-      }
+      .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
       .controls button{ width:100%; }
       .press{ transform: scale(.96); transition: transform 120ms ease; }
       .controls button{ font-weight:700; }
@@ -140,11 +135,10 @@
 
     #themeBtn{
       display:inline-flex; align-items:center; justify-content:center;
-      width:48px; height:48px; padding:0; border:1px solid var(--border);
-      border-radius: var(--radius); /* rounded square */
+      width:48px; height:48px; padding:0;
+      border:1px solid var(--border); border-radius: var(--radius); /* rounded square */
       background:var(--btn-bg); color:var(--fg);
     }
-
     #themeIcon{ width:28px; height:28px; display:block; }
 
     /* ------------------------------
@@ -165,10 +159,8 @@
     /* Soft variants */
     @keyframes shakeSoft{ 0%,100%{ transform:translateX(0) } 20%{ transform:translateX(-3px) } 40%{ transform:translateX(3px) } 60%{ transform:translateX(-2px) } 80%{ transform:translateX(2px) } }
     .shake-soft{ animation: shakeSoft .22s linear; }
-
     @keyframes popSoft{ 0%{ transform:scale(1) } 50%{ transform:scale(1.03) } 100%{ transform:scale(1) } }
     .pop-soft{ animation: popSoft .45s ease; }
-
     /* Performance hints for smooth transforms */
     .row > .tile, .bank > .btn-letter { will-change: transform; contain: layout paint; }
     @media (prefers-reduced-motion: reduce){
@@ -187,8 +179,6 @@
     .card h2{ margin:0 0 10px; letter-spacing:.06em; }
     .card p{ margin:.5rem 0; color:var(--muted); }
     .card .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
-    .controls button{ font-weight:700; }
-    .card .actions button{ font-weight:700; }
 
     /* ------------------------------
        9) Visually-hidden for a11y
@@ -202,7 +192,7 @@
     <header class="header">
       <div></div>
       <div class="title" aria-hidden="true">JUMBL</div>
-      <div></div>
+      <div class="theme-wrap"></div>
     </header>
 
     <!-- Lives -->
@@ -233,6 +223,7 @@
         <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg>
       </button>
     </div>
+
     <div class="spacer" aria-hidden="true"></div>
 
     <!-- A11y announcer for granular updates (letters placed, etc.) -->
@@ -304,7 +295,7 @@
     /* ------------------------------
        3) Viewport var --vw updates
        ------------------------------ */
-       function setVW(){
+      function setVW(){
         const vv = window.visualViewport;
         const w = (vv ? vv.width  : window.innerWidth)  || window.innerWidth;
         const h = (vv ? vv.height : window.innerHeight) || window.innerHeight;
@@ -320,9 +311,7 @@
     window.addEventListener('orientationchange', setVW);
     window.addEventListener('resize', setVW);
     window.addEventListener('pageshow', setVW);
-    if(window.visualViewport){
-      visualViewport.addEventListener('resize', syncControlHeights);
-    }
+    if(window.visualViewport){ visualViewport.addEventListener('resize', syncControlHeights); }
     window.addEventListener('resize', syncControlHeights);
 
    /* ------------------------------
@@ -335,9 +324,7 @@
     });
 
     // Block two-finger pinch on other engines
-    app.addEventListener('touchstart', (e)=>{
-      if(e.touches.length > 1) e.preventDefault();
-    }, { passive:false });
+    app.addEventListener('touchstart', (e)=>{ if(e.touches.length > 1) e.preventDefault(); }, { passive:false });
 
     // Block iOS double-tap-to-zoom (quick second tap)
     let lastTouchEnd = 0;
@@ -392,16 +379,14 @@
       if(text.charCodeAt(0) === 0xFEFF){ text = text.slice(1); }
       const seen = new Set();
       const out = [];
-      text.split(/\r?\n|\r/).forEach(line=>{
+      text.split(/\r?\n/).forEach(line=>{
         const s = line.trim().toUpperCase();
         if(/^[A-Z]{5}$/.test(s) && !seen.has(s)){ seen.add(s); out.push(s); }
       });
       return out;
     }
 
-    function pickAnswer(){
-      return ANSWER_POOL[randInt(ANSWER_POOL.length)];
-    }
+    function pickAnswer(){ return ANSWER_POOL[randInt(ANSWER_POOL.length)]; }
 
     function buildBankFrom(word){
       const arr = word.split("").map(ch=>({ ch, used:false }));
@@ -603,7 +588,6 @@
       }
       // allow clearing during animations only when explicitly forced
       if (!opts.force && (state.isAnimating || state.modalOpen)) return;
-
       for (let i = 0; i < 5; i++) {
         const bi = state.placedIndex[i];
         if (bi !== null) { state.bank[bi].used = false; }
@@ -613,9 +597,7 @@
       renderAnswer();
       renderBank();
       // animate clear only if requested (prevents double-shake on invalid)
-      if (opts.animate){
-        play(answerRow, 'shake-soft');
-      }
+      if (opts.animate){ play(answerRow, 'shake-soft'); }
     }
 
     function autoSubmitIfFull(){
@@ -637,7 +619,6 @@
         }, 600);
         return;
       }
-
       // Invalid: shake, then clear — robust on older iOS
       state.isAnimating = true;
       play(answerRow, 'shake');
@@ -665,69 +646,106 @@
     /* ------------------------------
        9) Events — clicks & keyboard
        ------------------------------ */
-      // Letter taps: show press while held; commit on release
-      bankRow.addEventListener('pointerdown', (e)=>{
-        const t = e.target;
-        if(!(t instanceof HTMLElement)) return;
-        if(!t.classList.contains('btn-letter')) return;
-        if (t.disabled) return;
-        t.classList.add('press');
-        // capture so we always get the matching pointerup/cancel
-        if (typeof t.setPointerCapture === 'function') {
-          try { t.setPointerCapture(e.pointerId); } catch {}
-        }
-      });
+    // Letter taps and keyboard keys: show press while held; commit on release
+    bankRow.addEventListener('pointerdown', (e)=>{
+      const t = e.target;
+      if(!(t instanceof HTMLElement)) return;
+      if(!t.classList.contains('btn-letter')) return;
+      if (t.disabled) return;
+      t.classList.add('press');
+      // capture so we always get the matching pointerup/cancel
+      if (typeof t.setPointerCapture === 'function') { try { t.setPointerCapture(e.pointerId); } catch {} }
+    });
 
-      bankRow.addEventListener('pointerup', (e)=>{
-        const t = e.target;
-        if(!(t instanceof HTMLElement)) return;
-        if(!t.classList.contains('btn-letter')) return;
-        t.classList.remove('press');
-        if (t.disabled) return; // might have been disabled mid-press
-        const idx = Number(t.dataset.idx);
-        onLetterTap(idx);
-      });
+    bankRow.addEventListener('pointerup', (e)=>{
+      const t = e.target;
+      if(!(t instanceof HTMLElement)) return;
+      if(!t.classList.contains('btn-letter')) return;
+      t.classList.remove('press');
+      if (t.disabled) return; // might have been disabled mid-press
+      const idx = Number(t.dataset.idx);
+      onLetterTap(idx);
+    });
 
-      bankRow.addEventListener('pointercancel', (e)=>{
-        const t = e.target;
-        if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
-          t.classList.remove('press');
-        }
-      });
+    bankRow.addEventListener('pointercancel', (e)=>{
+      const t = e.target;
+      if(t instanceof HTMLElement && t.classList.contains('btn-letter')){ t.classList.remove('press'); }
+    });
 
-      bankRow.addEventListener('pointerleave', (e)=>{
-        const t = e.target;
-        if(t instanceof HTMLElement && t.classList.contains('btn-letter')){
-          t.classList.remove('press');
-        }
-      });
+    bankRow.addEventListener('pointerleave', (e)=>{
+      const t = e.target;
+      if(t instanceof HTMLElement && t.classList.contains('btn-letter')){ t.classList.remove('press'); }
+    });
 
-      // Buttons: stay "pressed" while held; pop back on pointerup, then run action
-      function makeTap(btn, handler){
-        if(!btn) return;
-        btn.addEventListener('pointerdown', () => btn.classList.add('press'));
-        btn.addEventListener('pointerup',   () => { btn.classList.remove('press'); handler(); });
-        btn.addEventListener('pointercancel', () => btn.classList.remove('press'));
-        btn.addEventListener('pointerleave',  () => btn.classList.remove('press'));
-      }
+    // Buttons (taps and keyboard keys): stay "pressed" while held; pop back on pointerup, then run action
+    function makeTap(btn, handler){
+      if(!btn) return;
+      btn.addEventListener('pointerdown', () => btn.classList.add('press'));
+      btn.addEventListener('pointerup', () => { btn.classList.remove('press'); handler(); });
+      btn.addEventListener('pointercancel', () => btn.classList.remove('press'));
+      btn.addEventListener('pointerleave', () => btn.classList.remove('press'));
+    }
 
-      makeTap(shuffleBtn, onShuffle);
-      makeTap(clearBtn,   () => onClearAll({ animate: true }));
-      makeTap(answerRow, () => onBackspace({ animate: true }));
+    makeTap(shuffleBtn, onShuffle);
+    makeTap(clearBtn, () => onClearAll({ animate: true }));
+    makeTap(answerRow, () => onBackspace({ animate: true }));
+
+    // Keyboard-to-UI press tracking (Space/Backspace/letters)
+    const keyHold = new Map(); // key -> { type, idx?, el }
 
     document.addEventListener('keydown', (e)=>{
+      // visuals only; actions commit on keyup
       if(state.modalOpen || state.isAnimating) return;
+      if(e.repeat) return; // ignore auto-repeats
       const k = e.key;
-      if(k === ' '){ e.preventDefault(); onShuffle(); return; }
-      if(k === 'Backspace' || k === 'Delete'){ e.preventDefault(); onClearAll(); return; }
+      // Space ↔ Shuffle
+      if(k === ' ' || k === 'Spacebar' || k === 'Space'){
+        e.preventDefault();
+        shuffleBtn.classList.add('press');
+        keyHold.set('Space', { type:'shuffle', el: shuffleBtn });
+        return;
+      }
+      // Backspace/Delete ↔ Clear
+      if(k === 'Backspace' || k === 'Delete'){
+        e.preventDefault();
+        clearBtn.classList.add('press');
+        keyHold.set('Clear', { type:'clear', el: clearBtn });
+        return;
+      }
+      // A–Z keys map to the first unused matching bank letter
       if(k.length === 1){
         const ch = k.toUpperCase();
         if(ch < 'A' || ch > 'Z') return;
-        // find leftmost matching UNUSED bank letter
         const i = state.bank.findIndex(b => !b.used && b.ch === ch);
-        if(i !== -1){ onLetterTap(i); }
+        if(i !== -1){
+          const btn = bankRow.querySelectorAll('.btn-letter')[i];
+          if(btn){ btn.classList.add('press'); keyHold.set(ch, { type:'letter', idx:i, el: btn }); }
+        }
       }
     }, true);
+
+    document.addEventListener('keyup', (e)=>{
+      const k = e.key;
+      let hold = null;
+      if(k === ' ' || k === 'Spacebar' || k === 'Space') hold = keyHold.get('Space');
+      else if(k === 'Backspace' || k === 'Delete') hold = keyHold.get('Clear');
+      else if(k.length === 1) hold = keyHold.get(k.toUpperCase());
+      if(!hold) return;
+      // Always clear the visual press
+      if(hold.el && hold.el.classList) hold.el.classList.remove('press');
+      keyHold.delete(k === ' ' || k === 'Spacebar' || k === 'Space' ? 'Space' : (k === 'Backspace' || k === 'Delete' ? 'Clear' : k.toUpperCase()));
+      // If a modal opened or animation started, abort action
+      if(state.modalOpen || state.isAnimating) return;
+      if(hold.type === 'shuffle'){ onShuffle(); return; }
+      if(hold.type === 'clear'){ onClearAll({ animate: true }); return; }
+      if(hold.type === 'letter'){ onLetterTap(hold.idx); }
+    }, true);
+
+    window.addEventListener('blur', ()=>{
+      // Remove any stuck .press when focus leaves the window
+      for(const h of keyHold.values()){ if(h.el && h.el.classList) h.el.classList.remove('press'); }
+      keyHold.clear();
+    });
 
     /* ------------------------------
        10) Modals (reusable) + focus mgmt
@@ -807,15 +825,15 @@
         const answers = normalizeList(aText);
         const guesses = normalizeList(gText);
         if(!answers.length || !guesses.length) throw new Error('One or both files are empty after parsing.');
-        // Build sets and validate subset
+        // Build sets and validate subset (ensure answers ⊆ guesses)
         const gSet = new Set(guesses);
         const missing = answers.filter(w => !gSet.has(w));
         if(missing.length){
           showModal('Error in word lists', `<p>All answers must also appear in <code>guesses.txt</code>.</p><p>Missing ${missing.length} entries. Example: <code>${missing.slice(0,5).join(', ')}</code></p>`, [ {label:'Retry', action:()=>{ closeModal(); loadWordLists(); }, isPrimary:true} ]);
           return;
         }
-        ANSWER_POOL = answers;        // answer source
-        GUESSES_SET = gSet;           // in-game dictionary: any 5-letter guess found here counts as correct
+        ANSWER_POOL = answers;
+        GUESSES_SET = gSet;
         closeModal();
         // After lists load, show Intro
         showIntro();
