@@ -204,6 +204,15 @@
    @keyframes popSoft{ 0%{ transform:scale(1) } 50%{ transform:scale(1.03) } 100%{ transform:scale(1) } }
    .pop-soft{ animation: popSoft .45s ease; }
 
+   /* Even subtler shake for the timer (≈30% less movement than shake-soft) */
+  @keyframes shakeTiny{
+    0%,100%{ transform:translateX(0) }
+    20%{ transform:translateX(-2.1px) }  /* 70% of 3px */
+    40%{ transform:translateX( 2.1px) }
+    60%{ transform:translateX(-1.4px) }  /* 70% of 2px */
+    80%{ transform:translateX( 1.4px) }
+  }
+  .shake-tiny{ animation: shakeTiny .22s linear; }
 
    /* Performance hints for smooth transforms */
    .row > .tile, .bank > .btn-letter { will-change: transform; contain: layout paint; }
@@ -211,6 +220,7 @@
 
    @media (prefers-reduced-motion: reduce){
      .shake, .jiggle, .pop{ animation-duration: .01s; }
+     .shake-soft, .pop-soft, .shake-tiny{ animation-duration: .01s; }
      .timer-fill{ transition: none; }
    }
 
@@ -439,7 +449,7 @@
    const randInt = n => Math.floor(Math.random()*n);
    function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j = randInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
-   const ANIM_CLASSES = ['shake','shake-soft','jiggle','pop','pop-soft'];
+   const ANIM_CLASSES = ['shake','shake-soft','shake-tiny','jiggle','pop','pop-soft'];
    function play(el, cls){
      // remove any prior animation classes
      for(const c of ANIM_CLASSES) el.classList.remove(c);
@@ -510,10 +520,9 @@
        srSeconds.textContent = `${secs} seconds remaining`;
        lastSpokenSecs = secs;
        // Subtle tick in the final 5 seconds
-      if (secs <= 5 && secs > 0) { play(timerRail, 'shake-soft'); }
-     }
+       if (secs <= 5 && secs > 0) { play(timerRail, 'shake-tiny'); }
+      }
    }
-
 
    function renderAnswer(){
      const frag = document.createDocumentFragment();
