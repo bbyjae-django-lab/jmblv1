@@ -751,6 +751,30 @@
        10) Modals (reusable) + focus mgmt
        ------------------------------ */
     let restoreFocusEl = null;
+    // NEW — modal keyboard handling (Enter/Space press + commit)
+    let modalHeldBtn = null;
+    function onModalKeyDown(e){
+      if(e.key !== 'Enter' && e.key !== ' ') return;
+      const t = document.activeElement;
+      if(!(t instanceof HTMLElement)) return;
+      if(!dialog.contains(t)) return;
+      if(t.tagName !== 'BUTTON') return;
+      e.preventDefault(); // prevent scrolling/submit defaults
+      t.classList.add('press');
+      modalHeldBtn = t;
+    }
+    function onModalKeyUp(e){
+      if(e.key !== 'Enter' && e.key !== ' ') return;
+      const t = (modalHeldBtn && dialog.contains(modalHeldBtn)) ? modalHeldBtn : document.activeElement;
+      modalHeldBtn = null;
+      if(!(t instanceof HTMLElement)) return;
+      if(!dialog.contains(t)) return;
+      if(t.tagName !== 'BUTTON') return;
+      t.classList.remove('press');
+      // Prefer the action we attached; fall back to click() if present.
+      if (typeof t.__action === 'function') { t.__action(); }
+      else if (typeof t.click === 'function') { t.click(); }
+    }
     function showModal(title, bodyHTML, actions){
       state.modalOpen = true;
       overlay.setAttribute('aria-hidden','false');
@@ -764,6 +788,7 @@
         b.textContent = a.label;
         if(a.isPrimary) b.autofocus = true;
         makeTap(b, a.action);
+        b.__action = a.action;
         dialogActions.appendChild(b);
       });
       restoreFocusEl = document.activeElement;
@@ -773,6 +798,8 @@
       dialog.addEventListener('keydown', trapTab);
       document.addEventListener('keydown', escClose);
       app.setAttribute('aria-hidden','true');
+      dialog.addEventListener('keydown', onModalKeyDown, true);
+      document.addEventListener('keyup', onModalKeyUp, true); 
     }
     function closeModal(){
       state.modalOpen = false;
@@ -781,6 +808,8 @@
       dialog.removeEventListener('keydown', trapTab);
       document.removeEventListener('keydown', escClose);
       app.removeAttribute('aria-hidden');
+      dialog.removeEventListener('keydown', onModalKeyDown, true);
+      document.removeEventListener('keyup', onModalKeyUp, true);
       if(restoreFocusEl && restoreFocusEl.focus) restoreFocusEl.focus();
     }
     function trapTab(e){
