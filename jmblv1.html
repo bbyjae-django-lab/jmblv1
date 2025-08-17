@@ -30,57 +30,13 @@
       --tile-bg:#000000; --tile-fg:#FFFFFF; --btn-bg:#000000; --btn-fg:#FFFFFF;
       --border:rgba(255,255,255,.20);
     }
-    /* 0b) Sky background variables (day ↔ night) */
-    :root{
-      --sky-0:#9FD6FF;         /* top */
-      --sky-1:#CFE9FF;         /* mid */
-      --sky-2:#FFE3B3;         /* warm horizon */
-      --stripe-color: rgba(255,255,255,.06);  /* banding */
-      --star-color: rgba(255,255,255,0);      /* hidden in day */
-      --glow: rgba(255,214,150,.28);          /* sunrise glow */
-    }
-
-    html.dark{
-      --sky-0:#0B1027;
-      --sky-1:#151B3A;
-      --sky-2:#1F2755;
-      --stripe-color: rgba(255,255,255,.03);
-      --star-color: rgba(255,255,255,.90);    /* visible at night */
-      --glow: rgba(64,95,255,.18);            /* moonlight glow */
-    }
 
     *, *::before, *::after{ box-sizing: border-box; }
     html, body{ height:100%; }
     body{
       margin:0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    /* App surfaces still use --bg; this is only the page backdrop */
-    background-color: var(--bg);
-    background-image:
-      /* twinkly “pixel” stars (two offset dot grids) */
-      radial-gradient(circle, var(--star-color) 1.2px, transparent 1.3px),
-      radial-gradient(circle, var(--star-color) 1.2px, transparent 1.3px),
-      /* gentle horizontal banding to hint at pixel art */
-      repeating-linear-gradient(180deg, var(--stripe-color) 0 22px, transparent 22px 44px),
-      /* horizon glow */
-      radial-gradient(120% 60% at 50% 120%, var(--glow) 0 25%, transparent 60%),
-      /* sky */
-      linear-gradient(to bottom, var(--sky-0), var(--sky-1) 55%, var(--sky-2));
-    background-size:
-      24px 24px, 24px 24px,
-      auto,
-      100% 100%,
-      cover;
-    background-position:
-      0 0, 12px 12px,
-      top left,
-      bottom center,
-      center;
-    background-attachment:
-      fixed, fixed,
-      fixed,
-      fixed,
-      fixed;
+      background:var(--bg);
       color:var(--fg);
       -webkit-text-size-adjust:100%;
       overflow-x:hidden;
