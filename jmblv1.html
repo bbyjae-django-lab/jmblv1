@@ -188,17 +188,6 @@
     /* Performance hints for smooth transforms */
     .row > .tile, .bank > .btn-letter { will-change: transform; contain: layout paint; }
 
-    /* Timer-specific micro-animations */
-    @keyframes pulseBeat { 0%{ transform:scaleY(1) } 50%{ transform:scaleY(1.14) } 100%{ transform:scaleY(1) } }
-
-    /* <10s: gentle wiggle on the rail; <5s: per-second pulse on the fill */
-    .timer-rail.wiggle{ animation: shakeSoft 1.2s linear infinite; }
-    .timer-rail.panic5 .timer-fill.tick{ animation: pulseBeat .28s ease; }
-
-    /* Optional subtle visual ramp (keeps monochrome aesthetic) */
-    .timer-rail.warn10 .timer-fill{ opacity: .90; }
-    .timer-rail.panic5 .timer-fill{ opacity: 1; }
-
     @media (prefers-reduced-motion: reduce){
       .shake, .jiggle, .pop{ animation-duration: .01s; }
       .timer-fill{ transition: none; }
@@ -461,34 +450,18 @@
     function renderScore(){ scoreEl.textContent = `Score: ${state.score}`; }
 
     function renderTimer(){
-    const now = performance.now();
-    const remain = clamp(state.deadlineAt - now, 0, COUNTDOWN_SECONDS*1000);
-    const ratio = remain / (COUNTDOWN_SECONDS*1000);
-    timerFill.style.transform = `scaleX(${ratio})`;
-    const secs = Math.round(remain/1000);
-
-    // ARIA value
-    timerRail.setAttribute('aria-valuenow', String(secs));
-
-    // Visual states
-    const warn10 = secs <= 10 && secs > 5;
-    const panic5 = secs <= 5;
-    timerRail.classList.toggle('warn10', secs <= 10);
-    timerRail.classList.toggle('panic5', panic5);
-    timerRail.classList.toggle('wiggle', warn10 && !panic5);
-
-    // Speak/pulse at most once per second
-    if (secs !== lastSpokenSecs) {
-      srSeconds.textContent = `${secs} seconds remaining`;
-      lastSpokenSecs = secs;
-
-      // In last 5 seconds, pulse the bar each second
-      if (panic5) {
-        timerFill.classList.add('tick');
-        timerFill.addEventListener('animationend', () => timerFill.classList.remove('tick'), { once: true });
+      const now = performance.now();
+      const remain = clamp(state.deadlineAt - now, 0, COUNTDOWN_SECONDS*1000);
+      const ratio = remain / (COUNTDOWN_SECONDS*1000);
+      timerFill.style.transform = `scaleX(${ratio})`; // right->left via transform-origin:left
+      const secs = Math.round(remain/1000);
+      timerRail.setAttribute('aria-valuenow', String(secs));
+      // Speak at most once per second
+      if (secs !== lastSpokenSecs) {
+        srSeconds.textContent = `${secs} seconds remaining`;
+        lastSpokenSecs = secs;
       }
     }
-  }
 
     function renderAnswer(){
       const frag = document.createDocumentFragment();
