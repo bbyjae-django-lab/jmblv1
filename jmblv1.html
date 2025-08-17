@@ -23,12 +23,32 @@
       --maxw:600px; /* app max width */
       --gap:10px;   /* tile/bank gap */
       --stack-tight: clamp(6px, 1.3vh, 12px);
+      /* Gradient palette (LIGHT) + shared controls */
+      --g1:#FFB36C; /* orange (more weight) */
+      --g2:#FF8FC6; /* pink mid */
+      --g3:#FFA6E6; /* pink end */
+      --grad-mid: 50%;                      /* <- midpoint moved from ~45% to 50% */
+      --jumbl-grad: linear-gradient(90deg, var(--g1) 0%, var(--g2) var(--grad-mid), var(--g3) 100%);
+
+      /* continuous gradient sizing (set by JS; fallback 100vw) */
+      --app-w: 100vw;
+
+      /* elevation */
+      --shadow: 0 6px 20px rgba(0,0,0,.08);
     }
     html.dark{
       /* Dark */
       --bg:#000000; --fg:#FFFFFF; --muted:rgba(255,255,255,.70); --track:rgba(255,255,255,.15);
       --tile-bg:#000000; --tile-fg:#FFFFFF; --btn-bg:#000000; --btn-fg:#FFFFFF;
       --border:rgba(255,255,255,.20);
+      /* Gradient palette (DARK) — more purple weight */
+      --g1:#9AA9FF; /* purple/indigo (more weight) */
+      --g2:#71D3CF; /* aqua mid */
+      --g3:#46E39C; /* green end */
+      --jumbl-grad: linear-gradient(90deg, var(--g1) 0%, var(--g2) var(--grad-mid), var(--g3) 100%);
+
+      /* elevation */
+      --shadow: 0 8px 24px rgba(0,0,0,.35);
     }
 
     *, *::before, *::after{ box-sizing: border-box; }
@@ -67,6 +87,24 @@
     /* ------------------------------
        1) App shell & safe-area insets
        ------------------------------ */
+       /* Continuous gradient utilities
+        Every element that should share the same sweep gets these rules
+        (JS will write --grad-x so all pieces line up across the app). */
+      .flow-grad{
+        background-image: var(--jumbl-grad);
+        background-repeat: no-repeat;
+        background-size: var(--app-w) 100%;
+        background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      }
+      .grad-text{
+        background-image: var(--jumbl-grad);
+        background-repeat: no-repeat;
+        background-size: var(--app-w) 100%;
+        background-position: calc(-1 * var(--grad-x, 0px)) 0;
+        -webkit-background-clip:text; background-clip:text;
+        -webkit-text-fill-color:transparent; color:transparent;
+      }
+
     .app{
       /* Use visualViewport width (via --vw) to avoid iOS rounding bleed */
       width: min(calc(var(--vw, 100vw)), var(--maxw));
@@ -96,7 +134,13 @@
        2) Header (3-col grid)
        ------------------------------ */
     .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
-    .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:3.5em; }
+    .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:3.5em; /* gradient text */
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat: no-repeat;
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent; color:transparent; }
     .theme-wrap{ justify-self:end; }
     .icon{ width:28px; height:28px; display:block; } /* was 22px */
     .icon svg{ width:100%; height:100%; display:block; }
@@ -108,13 +152,23 @@
     .lives{ display:flex; justify-content:center; gap:8px; }
     .pip{ width:28px; aspect-ratio:1/1; border:1px solid var(--border); border-radius:6px; background: transparent; }
     .pip.off{ opacity:.32; }
+    /* gradient fills only for active lives */
+    .lives .pip:not(.off){
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat: no-repeat;
+    }
     .lives .pip:not(.off){ background: var(--fg); }
 
     .score{  text-align:center; font-size:17px; font-weight:700; color:var(--muted); }
 
     .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
     .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
-    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
+    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background-image: var(--jumbl-grad);
+    background-size: var(--app-w) 100%;
+    background-position: calc(-1 * var(--grad-x, 0px)) 0;
+    background-repeat: no-repeat; transition: transform 100ms linear; }
 
     /* spacing tweaks for single-hand reach */
     .header{ margin-top: 36px; margin-bottom: 26px; }
@@ -134,7 +188,13 @@
       aspect-ratio:1/1;
       min-inline-size:64px;
       border:1px solid var(--border); border-radius: var(--radius);
-      background: var(--tile-bg); color:var(--tile-fg);
+      box-shadow: var(--shadow);
+      background-color: var(--tile-bg); color:var(--tile-fg);
+      /* continuous gradient layer (sits above background-color) */
+      background-image: var(--jumbl-grad);
+      background-size: var(--app-w) 100%;
+      background-position: calc(-1 * var(--grad-x, 0px)) 0;
+      background-repeat: no-repeat;
       display:flex; align-items:center; justify-content:center; /* older iOS centering */
       line-height:1;                                             /* avoid vertical bias */
       font-weight:900;
@@ -150,8 +210,8 @@
        5) Controls
        ------------------------------ */
     .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
-    .controls button{ width:100%; }
-    .press{ transform: scale(.96); transition: transform 120ms ease; }
+    .controls button{ width:100%; box-shadow: var(--shadow);    }
+    .press{ transform: scale(.96); transition: transform 120ms ease; box-shadow: 0 4px 14px rgba(0,0,0,.12);  html.dark .press{ box-shadow: 0 6px 18px rgba(0,0,0,.55); }  }
     .controls button{ font-weight:700; }
     .card .actions button{ font-weight:700; }
     .theme-bottom{ display:flex; justify-content:center; }
@@ -160,6 +220,7 @@
       display:inline-flex; align-items:center; justify-content:center;
       width:48px; height:48px; padding:0;
       border:1px solid var(--border); border-radius: var(--radius); /* rounded square */
+      box-shadow: var(--shadow);
       background:var(--btn-bg); color:var(--fg);
     }
     #themeIcon{ width:28px; height:28px; display:block; }
@@ -331,7 +392,30 @@
     const dialogTitle = $("#dialogTitle");
     const dialogBody = $("#dialogBody");
     const dialogActions = $("#dialogActions");
+    /* ---------- Continuous gradient sizing/positioning ---------- */
+    function setGradientWidth(){
+      const w = Math.round(app.offsetWidth || window.innerWidth);
+      document.documentElement.style.setProperty('--app-w', w + 'px');
+    }
 
+    /* Write each element's left offset (relative to .app) into --grad-x */
+    function updateGradientAnchors(){
+      const appRect = app.getBoundingClientRect();
+
+      const setX = (el) => {
+        if(!el) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--grad-x', Math.round(r.left - appRect.left) + 'px');
+      };
+
+      // Title, lives, timer fill
+      setX(document.querySelector('.title'));
+      document.querySelectorAll('.lives .pip:not(.off)').forEach(setX);
+      setX(document.getElementById('timerFill'));
+
+      // Answer row tiles + bank buttons
+      document.querySelectorAll('#answerRow .tile, #bank .btn-letter').forEach(setX);
+    }
     /* ------------------------------
        3) Viewport var --vw updates
        ------------------------------ */
@@ -344,6 +428,7 @@
       document.documentElement.style.setProperty('--vh', Math.round(h) + 'px');
     }
     setVW();
+    setGradientWidth();
     if(window.visualViewport){
       visualViewport.addEventListener('resize', setVW);
       visualViewport.addEventListener('scroll', setVW);
@@ -351,6 +436,8 @@
     window.addEventListener('orientationchange', setVW);
     window.addEventListener('resize', setVW);
     window.addEventListener('pageshow', setVW);
+    window.addEventListener('resize', ()=>{ setGradientWidth(); updateGradientAnchors(); });
+    window.addEventListener('orientationchange', ()=>{ setGradientWidth(); updateGradientAnchors(); });
     if(window.visualViewport){ visualViewport.addEventListener('resize', syncControlHeights); }
     window.addEventListener('resize', syncControlHeights);
 
@@ -513,6 +600,7 @@
       renderTimer();
       renderAnswer();
       renderBank();
+      updateGradientAnchors();
     }
 
     function syncControlHeights(){
