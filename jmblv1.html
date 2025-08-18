@@ -43,6 +43,19 @@
      -webkit-text-size-adjust:100%;
      overflow-x:hidden;
    }
+
+    /* Background SVG animation host */
+    #bgSvg { z-index: 0; opacity: 0.28; }     /* subtle by default */
+    html.dark #bgSvg { opacity: 0.22; }       /* a touch softer in dark mode */
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      #bgSvg .out-top,
+      #bgSvg .in-top,
+      #bgSvg .out-bottom,
+      #bgSvg .in-bottom { animation: none !important; }
+    }
+
    :focus{ outline: auto; }
    :focus:not(:focus-visible){ outline: none; }
    a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -222,20 +235,7 @@
      .shake, .jiggle, .pop{ animation-duration: .01s; }
      .shake-soft, .pop-soft, .shake-tiny{ animation-duration: .01s; }
      .timer-fill{ transition: none; }
-   
-     /* Background SVG animation host */
-#bgSvg { z-index: 0; opacity: 0.28; }     /* subtle by default */
-html.dark #bgSvg { opacity: 0.22; }       /* a touch softer in dark mode */
-
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce){
-  #bgSvg .out-top,
-  #bgSvg .in-top,
-  #bgSvg .out-bottom,
-  #bgSvg .in-bottom { animation: none !important; }
-}
-   
-    }
+   }
 
 
    /* ------------------------------
