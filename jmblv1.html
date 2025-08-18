@@ -18,7 +18,11 @@
      --bg:#FFFFFF; --fg:#000000; --muted:rgba(0,0,0,.60); --track:rgba(0,0,0,.12);
      --tile-bg:#FFFFFF; --tile-fg:#000000; --btn-bg:#FFFFFF; --btn-fg:#000000;
      --border:rgba(0,0,0,.15); --radius:12px;
-
+      /* Button elevation tokens (light) */
+      --btn-shadow:        0 8px 18px rgba(0,0,0,.12), 0 3px 6px rgba(0,0,0,.14), 0 1px 0 rgba(255,255,255,.70) inset;
+      --btn-shadow-hover:  0 10px 24px rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.16), 0 1px 0 rgba(255,255,255,.70) inset;
+      --btn-shadow-pressed:0 2px 4px rgba(0,0,0,.22) inset, 0 1px 2px rgba(0,0,0,.18);
+      --btn-shadow-disabled:none;
 
      /* layout clamps */
      --maxw:600px; /* app max width */
@@ -30,6 +34,11 @@
      --bg:#000000; --fg:#FFFFFF; --muted:rgba(255,255,255,.70); --track:rgba(255,255,255,.15);
      --tile-bg:#000000; --tile-fg:#FFFFFF; --btn-bg:#000000; --btn-fg:#FFFFFF;
      --border:rgba(255,255,255,.20);
+     /* Button elevation tokens (dark) */
+      --btn-shadow:        0 6px 16px rgba(0,0,0,.60), 0 3px 8px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.10) inset;
+      --btn-shadow-hover:  0 10px 22px rgba(0,0,0,.65), 0 4px 10px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.10) inset;
+      --btn-shadow-pressed:0 2px 6px rgba(0,0,0,.65) inset, 0 1px 2px rgba(0,0,0,.55);
+      --btn-shadow-disabled:none;
    }
 
 
@@ -179,11 +188,55 @@
       ------------------------------ */
       .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
       .controls button{ width:100%; position:relative; z-index:2; background:var(--btn-bg); }
-   .press{ transform: scale(.96); transition: transform 120ms ease; }
-   .controls button{ font-weight:700; }
-   .card .actions button{ font-weight:700; }
-   .theme-bottom{ display:flex; justify-content:center; }
+      .press{ transform: scale(.96); transition: transform 120ms ease, box-shadow 140ms ease; }
+      .controls button{ font-weight:700; }
+      .card .actions button{ font-weight:700; border-radius: calc(var(--radius) + 2px); }
+      .theme-bottom{ display:flex; justify-content:center; }
 
+   /* 5b) Raised buttons (letter bank, controls, modal actions) */
+.controls button,
+.card .actions button{
+  /* Ensure consistent chrome like letter tiles */
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--btn-bg);
+}
+
+/* Elevation + subtle inner sheen */
+.btn-letter,
+.controls button,
+.card .actions button{
+  box-shadow: var(--btn-shadow);
+  transition: transform 120ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+/* Desktop hover: slightly floatier, no transform conflict */
+@media (hover:hover) and (pointer:fine){
+  .btn-letter:hover,
+  .controls button:hover,
+  .card .actions button:hover{
+    box-shadow: var(--btn-shadow-hover);
+  }
+}
+
+/* Pressed: reduce drop, add a gentle inset “depression” */
+.btn-letter.press,
+.controls button.press,
+.card .actions button.press{
+  /* override .press’s transform with a tiny dip */
+  transform: translateY(1px) scale(.96);
+  box-shadow: var(--btn-shadow-pressed);
+}
+
+/* Disabled/used: remove elevation to signal inert state */
+.btn-letter:disabled,
+.btn-letter[aria-pressed="true"],
+.btn-letter.used{
+  box-shadow: var(--btn-shadow-disabled);
+}
+
+/* Keep the theme icon flat by design (explicitly guard it) */
+#themeBtn{ box-shadow: none !important; }
 
    /* Invisible button: keep 48×48 touch target, show only the icon */
   #themeBtn{
