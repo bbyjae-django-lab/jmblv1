@@ -866,8 +866,9 @@
 
    function gameOver(){
      stopTimer();
-     showModal('GAME OVER',
-       `<p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>`,
+     showModal('Game over...',
+       `<p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>
+       <p> feedback? bbyjae-django-lab@proton.me</p>`,
        [ {label:'Again', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]
      );
    }
@@ -1079,12 +1080,11 @@
 
    function showIntro(){
      const body = `
-       <p>Un-JUMBL the letters to make a 5-letter word.</p>
-       <p>Beat the clock to increase your score and refill the timer.</p>
-       <p>If the timer hits zero, you lose a life.</p>
-       <p><strong>25 seconds</strong> per word • <strong>3 lives</strong></p>
+      <p></p>
+       <p>5 letters. 25 seconds. 3 lives.</p>
+       <p></p>
        <p>Highest score wins.</p>`;
-     showModal('RULES', body, [ {label:'Play', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]);
+     showModal('Rules...', body, [ {label:'Play', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]);
    }
 
 
