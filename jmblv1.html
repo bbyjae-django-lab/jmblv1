@@ -63,7 +63,7 @@
    button{
      font:inherit; color:inherit;
      background:var(--btn-bg);
-     border:1px solid var(--border);
+     border:none;
      border-radius: var(--radius);
      padding:1rem 1rem;
      cursor:pointer;
@@ -110,7 +110,6 @@
       z-index: 1;
    }
 
-
    /* Hide all UI except the header during pre-game or while any modal is open */
    .app.pre > :not(.header),
    .app.masked > :not(.header){ display:none !important; }
@@ -122,10 +121,9 @@
    .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
    .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:3.5em; position:relative; z-index:3; opacity:1; mix-blend-mode:normal; }
    .theme-wrap{ justify-self:end; }
-   .icon{ width:28px; height:28px; display:block; } /* was 22px */
+   .icon{ width:28px; height:28px; display:block; } 
    .icon svg{ width:100%; height:100%; display:block; }
    .theme-bottom{ display:flex; justify-content:center; }
-
 
    /* ------------------------------
       3) Lives, Score, Timer
@@ -135,16 +133,12 @@
    .pip.off{ opacity:.32; }
    .lives .pip:not(.off){ background: var(--fg); }
 
-
    .score{  text-align:center; font-size:17px; font-weight:700; color:var(--muted); }
-
 
    .timer-card{ border:none; padding:0; background:transparent; border-radius:0; }
    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
 
-
-   /* spacing tweaks for single-hand reach */
    .header{ margin-top: 36px; margin-bottom: 26px; }
    .lives{  margin-bottom: 4px; }
    .score{  margin-top: 4px; margin-bottom: 4px; }
