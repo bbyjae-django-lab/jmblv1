@@ -187,14 +187,22 @@
    .theme-bottom{ display:flex; justify-content:center; }
 
 
-   #themeBtn{
-     display:inline-flex; align-items:center; justify-content:center;
-     width:48px; height:48px; padding:0;
-     border:none; border-radius: var(--radius); /* rounded square */
-     background:var(--btn-bg); color:var(--fg);
-   }
-   #themeIcon{ width:28px; height:28px; display:block; }
+   /* Invisible button: keep 48×48 touch target, show only the icon */
+  #themeBtn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:48px; height:48px; padding:0;
+    background:transparent;     /* no fill */
+    border:none;                /* no border */
+    box-shadow:none;            /* in case a UA adds one */
+    border-radius:0;            /* not visible, but avoids ghost corners */
+    color:var(--fg);            /* drives the SVG icon color */
+  }
+  /* Remove focus outline on this control only (keep it elsewhere) */
+  #themeBtn:focus,
+  #themeBtn:focus-visible{ outline:none; }
 
+  #themeIcon{
+  width:28px; height:28px; display:block; pointer-events:none; }
 
    /* ------------------------------
       6) Spacer to aid tall screens
