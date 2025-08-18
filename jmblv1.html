@@ -8,22 +8,13 @@
 />
  <meta name="apple-mobile-web-app-capable" content="yes" />
  <title>JUMBL</title>
- <link rel="preload" as="font" href="fonts/FredokaExpanded-Regular.woff2" type="font/woff2" crossorigin>
- <link rel="preload" as="font" href="fonts/FredokaExpanded-Bold.woff2" type="font/woff2" crossorigin>
-  <style>
-/* Fredoka Expanded — self-hosted (Regular + Bold) */
+ <link rel="preload" as="font" href="fonts/Stylish-Regular.woff2" type="font/woff2" crossorigin>
+ <style>
+/* Stylish — self-hosted (Regular only) */
 @font-face{
-  font-family: 'FredokaExpanded';
-  src: url('fonts/FredokaExpanded-Regular.woff2') format('woff2');
+  font-family: 'Stylish';
+  src: url('fonts/Stylish-Regular.woff2') format('woff2');
   font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face{
-  font-family: 'FredokaExpanded';
-  src: url('fonts/FredokaExpanded-Bold.woff2') format('woff2');
-  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
@@ -71,7 +62,7 @@
    html, body{ height:100%; }
    body{
      margin:0;
-     font-family: "FredokaExpanded", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+     font-family: "Stylish", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
      background:var(--bg);
      color:var(--fg);
      -webkit-text-size-adjust:100%;
@@ -159,7 +150,7 @@
       2) Header (3-col grid)
       ------------------------------ */
    .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
-   .title{ text-align:center; font-weight:700; letter-spacing:.08em; font-size:3.5em; position:relative; z-index:3; opacity:1; mix-blend-mode:normal; }
+   .title{ text-align:center; font-weight:400; letter-spacing:.08em; font-size:3.5em; position:relative; z-index:3; opacity:1; mix-blend-mode:normal; }
    .theme-wrap{ justify-self:end; }
    .icon{ width:28px; height:28px; display:block; } 
    .icon svg{ width:100%; height:100%; display:block; }
@@ -173,7 +164,7 @@
    .pip.off{ opacity:.32; }
    .lives .pip:not(.off){ background: var(--fg); }
 
-   .score{  text-align:center; font-size:17px; font-weight:700; color:var(--muted); }
+   .score{  text-align:center; font-size:17px; font-weight:400; color:var(--muted); }
 
    .timer-card{ border:none; padding:0; background:transparent; border-radius:0; }
    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
@@ -200,7 +191,7 @@
      background: var(--tile-bg); color:var(--tile-fg);
      display:flex; align-items:center; justify-content:center; /* older iOS centering */
      line-height:1;                                             /* avoid vertical bias */
-     font-weight:700;
+     font-weight:400;
      font-size: clamp(24px, 8.5vw, 36px);  /* slightly larger */
      user-select:none;
    }
@@ -233,8 +224,8 @@
       .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
       .controls button{ width:100%; position:relative; z-index:2; background:var(--btn-bg); }
       .press{ transform: scale(.96); transition: transform 120ms ease, box-shadow 140ms ease; }
-      .controls button{ font-weight:700; }
-      .card .actions button{ font-weight:700; border-radius: calc(var(--radius) + 2px); }
+      .controls button{ font-weight:400; }
+      .card .actions button{ font-weight:400; border-radius: calc(var(--radius) + 2px); }
       .theme-bottom{ display:flex; justify-content:center; }
 
    /* 5b) Raised buttons — applied once to all buttons except the theme icon */
