@@ -106,6 +106,8 @@
      overflow: hidden;                /* no scroll bounce */
      overscroll-behavior: none;
      gap: 16px;
+      position: relative;       /* new */
+      z-index: 1;
    }
 
 
@@ -118,7 +120,7 @@
       2) Header (3-col grid)
       ------------------------------ */
    .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
-   .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:3.5em; }
+   .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:3.5em; position:relative; z-index:3; opacity:1; mix-blend-mode:normal; }
    .theme-wrap{ justify-self:end; }
    .icon{ width:28px; height:28px; display:block; } /* was 22px */
    .icon svg{ width:100%; height:100%; display:block; }
@@ -137,7 +139,7 @@
    .score{  text-align:center; font-size:17px; font-weight:700; color:var(--muted); }
 
 
-   .timer-card{ border:1px solid var(--border); border-radius: var(--radius); padding:10px; }
+   .timer-card{ border:none; padding:10px; }
    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
 
@@ -177,8 +179,8 @@
    /* ------------------------------
       5) Controls
       ------------------------------ */
-   .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
-   .controls button{ width:100%; }
+      .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+      .controls button{ width:100%; position:relative; z-index:2; background:var(--btn-bg); }
    .press{ transform: scale(.96); transition: transform 120ms ease; }
    .controls button{ font-weight:700; }
    .card .actions button{ font-weight:700; }
@@ -188,7 +190,7 @@
    #themeBtn{
      display:inline-flex; align-items:center; justify-content:center;
      width:48px; height:48px; padding:0;
-     border:1px solid var(--border); border-radius: var(--radius); /* rounded square */
+     border:none; border-radius: var(--radius); /* rounded square */
      background:var(--btn-bg); color:var(--fg);
    }
    #themeIcon{ width:28px; height:28px; display:block; }
@@ -261,7 +263,6 @@
  </style>
 </head>
 <body>
-  <body>
     <!-- Background SVG animation (non-interactive) -->
     <svg id="bgSvg" aria-hidden="true" focusable="false" role="presentation"
          preserveAspectRatio="xMidYMid slice" viewBox="10 10 80 80"
