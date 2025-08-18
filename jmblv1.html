@@ -62,8 +62,8 @@
    .overlay, .dialog { touch-action: none; }
 
     /* Background SVG animation host */
-    #bgSvg { z-index: 0; opacity: 0.55; }     /* subtle by default */
-    html.dark #bgSvg { opacity: 0.55; }       /* a touch softer in dark mode */
+    #bgSvg { z-index: 0; opacity: 0.50; }     /* subtle by default */
+    html.dark #bgSvg { opacity: 0.50; }       /* a touch softer in dark mode */
 
     /* Respect reduced motion */
     @media (prefers-reduced-motion: reduce){
@@ -140,31 +140,18 @@
       2) Header (3-col grid)
       ------------------------------ */
    .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
-  /* Outline wordmark without Safari stroke artefacts */
-  .title{
-    text-align:center;
+    .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:4.25em; position:relative; z-index:3; opacity:1; mix-blend-mode:normal; color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: 3px var(--fg); }
+    /* Size/center is still driven by .title; SVG inherits currentColor */
+    .title .wordmark{ display:block; width:100%; height:1em; }
+    .title .wordmark text{
+      font: 800 1em/1 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      letter-spacing:.08em;
+      fill:none;
+      stroke:var(--fg);
+      stroke-width:3.2px;
+      stroke-linejoin:round; /* removes jaggies on M/B joins */
+    }
 
-    /* ↓ Avoid the “900 + text-stroke” bug on iOS by stepping down one grade */
-    font-weight:800;
-    font-variation-settings:"wght" 800;   /* for variable system fonts */
-
-    /* A hair tighter so the optical width stays similar */
-    letter-spacing:.08em;
-
-    font-size:4.25em;
-    position:relative; z-index:3; opacity:1; mix-blend-mode:normal;
-
-    /* Outline only */
-    color:transparent;
-    -webkit-text-fill-color:transparent;
-    -webkit-text-stroke:2.75px var(--fg); /* ~same visual heft as 900/3px */
-
-    /* Make WebKit use precise stroking & its own layer */
-    text-rendering:geometricPrecision;
-    -webkit-font-smoothing:antialiased;
-    transform:translateZ(0);
-    will-change:transform;
-  }
    .theme-wrap{ justify-self:end; }
    .icon{ width:28px; height:28px; display:block; } 
    .icon svg{ width:100%; height:100%; display:block; }
@@ -392,8 +379,12 @@
    <!-- Header -->
    <header class="header">
      <div></div>
-     <div class="title" aria-hidden="true">JUMBL</div>
-     <div class="theme-wrap"></div>
+     <div class="title" aria-hidden="true">
+      <svg class="wordmark" viewBox="0 0 700 140" aria-hidden="true">
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">JUMBL</text>
+      </svg>
+    </div>
+         <div class="theme-wrap"></div>
    </header>
 
 
