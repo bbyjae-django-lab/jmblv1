@@ -23,6 +23,12 @@
       --btn-shadow-hover:  0 10px 24px rgba(0,0,0,.14), 0 4px 10px rgba(0,0,0,.16), 0 1px 0 rgba(255,255,255,.70) inset;
       --btn-shadow-pressed:0 2px 4px rgba(0,0,0,.22) inset, 0 1px 2px rgba(0,0,0,.18);
       --btn-shadow-disabled:none;
+      /* Tile elevation tokens (light) — keep blur <= var(--gap) to avoid bridging */
+      --tile-shadow-empty: 0 2px 6px rgba(0,0,0,.08), 0 1px 0 rgba(255,255,255,.65) inset;
+      --tile-shadow:       0 3px 8px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.10), 0 1px 0 rgba(255,255,255,.70) inset;
+      /* Tile elevation tokens (dark) — darker drop, faint inner sheen */
+      --tile-shadow-empty: 0 2px 6px rgba(0,0,0,.65), 0 1px 0 rgba(255,255,255,.08) inset;
+      --tile-shadow:       0 3px 8px rgba(0,0,0,.70), 0 2px 6px rgba(0,0,0,.60), 0 1px 0 rgba(255,255,255,.10) inset;
 
      /* layout clamps */
      --maxw:600px; /* app max width */
@@ -177,6 +183,25 @@
      font-size: clamp(24px, 8.5vw, 36px);  /* slightly larger */
      user-select:none;
    }
+   /* Base tile styling */
+.tile{ 
+  background: var(--tile-bg);
+  /* Individual, cozy elevation per box */
+  box-shadow: var(--tile-shadow-empty);
+  transition: box-shadow 140ms ease, transform 120ms ease;
+}
+
+/* Filled tiles stand out a touch more than empty slots */
+.tile:not(.empty){
+  box-shadow: var(--tile-shadow);
+}
+
+/* Empty tiles remain visible but subtler */
+.tile.empty{
+  color: var(--muted);
+  box-shadow: var(--tile-shadow-empty);
+}
+
    .tile{ background:var(--tile-bg); }
    .tile.empty{ color: var(--muted); }
    .btn-letter{ background:var(--btn-bg); }
