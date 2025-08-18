@@ -154,15 +154,16 @@
       ------------------------------ */
    .row, .bank{ display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--gap); }
    .tile, .btn-letter{
-    aspect-ratio:1/1;
-    min-inline-size:64px;
-    border-radius: var(--radius);
-    background: var(--tile-bg); color:var(--tile-fg);
-    ...
-  }
-  .tile{ border:1px solid var(--border); }   /* keep tile border */
-  .btn-letter{ border:none; }                /* remove letter-button border */
-
+     aspect-ratio:1/1;
+     min-inline-size:64px;
+     border:1px solid var(--border); border-radius: var(--radius);
+     background: var(--tile-bg); color:var(--tile-fg);
+     display:flex; align-items:center; justify-content:center; /* older iOS centering */
+     line-height:1;                                             /* avoid vertical bias */
+     font-weight:900;
+     font-size: clamp(24px, 8.5vw, 36px);  /* slightly larger */
+     user-select:none;
+   }
    .tile{ background:var(--tile-bg); }
    .tile.empty{ color: var(--muted); }
    .btn-letter{ background:var(--btn-bg); }
