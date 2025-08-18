@@ -895,7 +895,8 @@
    function gameOver(){
      stopTimer();
      showModal('Game over...',
-       `<p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>
+       `<br>
+       <p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>
        <p> say hi or report bugs... bbyjae-django-lab@proton.me</p>`,
        [ {label:'Again', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]
      );
