@@ -203,8 +203,6 @@
       box-shadow: var(--tile-shadow-empty);
     }
 
-   .tile{ background:var(--tile-bg); }
-   .tile.empty{ color: var(--muted); }
    .btn-letter{ background:var(--btn-bg); }
    .btn-letter[aria-pressed="true"], .btn-letter.used{ opacity:.32; }
 
@@ -219,47 +217,38 @@
       .card .actions button{ font-weight:700; border-radius: calc(var(--radius) + 2px); }
       .theme-bottom{ display:flex; justify-content:center; }
 
-   /* 5b) Raised buttons (letter bank, controls, modal actions) */
-.controls button,
-.card .actions button{
-  /* Ensure consistent chrome like letter tiles */
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--btn-bg);
-}
+   /* 5b) Raised buttons — applied once to all buttons except the theme icon */
+    :where(button):not(#themeBtn){
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--btn-bg);
+      box-shadow: var(--btn-shadow);
+      transition: transform 120ms ease, box-shadow 140ms ease, filter 140ms ease;
+    }
 
-/* Elevation + subtle inner sheen */
-.btn-letter,
-.controls button,
-.card .actions button{
-  box-shadow: var(--btn-shadow);
-  transition: transform 120ms ease, box-shadow 140ms ease, filter 140ms ease;
-}
+    /* Desktop hover lift */
+    @media (hover:hover) and (pointer:fine){
+      :where(button):not(#themeBtn):hover{
+        box-shadow: var(--btn-shadow-hover);
+      }
+    }
 
-/* Desktop hover: slightly floatier, no transform conflict */
-@media (hover:hover) and (pointer:fine){
-  .btn-letter:hover,
-  .controls button:hover,
-  .card .actions button:hover{
-    box-shadow: var(--btn-shadow-hover);
-  }
-}
+    /* Pressed state: slight dip + pressed shadow */
+    :where(button):not(#themeBtn).press{
+      transform: translateY(1px) scale(.96); /* complements the global .press scale */
+      box-shadow: var(--btn-shadow-pressed);
+    }
 
-/* Pressed: reduce drop, add a gentle inset “depression” */
-.btn-letter.press,
-.controls button.press,
-.card .actions button.press{
-  /* override .press’s transform with a tiny dip */
-  transform: translateY(1px) scale(.96);
-  box-shadow: var(--btn-shadow-pressed);
-}
+    /* Disabled buttons lose elevation */
+    :where(button):disabled{
+      box-shadow: var(--btn-shadow-disabled);
+    }
 
-/* Disabled/used: remove elevation to signal inert state */
-.btn-letter:disabled,
-.btn-letter[aria-pressed="true"],
-.btn-letter.used{
-  box-shadow: var(--btn-shadow-disabled);
-}
+    /* Letter-bank specifics: “used” or aria-pressed behaves like disabled */
+    .btn-letter[aria-pressed="true"],
+    .btn-letter.used{
+      box-shadow: var(--btn-shadow-disabled);
+    }
 
 /* Keep the theme icon flat by design (explicitly guard it) */
 #themeBtn{ box-shadow: none !important; }
