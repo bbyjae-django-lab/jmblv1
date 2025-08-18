@@ -895,8 +895,7 @@
    function gameOver(){
      stopTimer();
      showModal('Game over...',
-       `<br>
-       <p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>
+       `<p><strong>${state.score}</strong> words in <strong>${fmtMMSS(secondsSince(state.runStartAt))}</strong></p>
        <p>say hi or report bugs...</p>
        <p>bbyjae-django-lab@proton.me</p>`,
        [ {label:'Again', action:()=>{ closeModal(); startRun(); }, isPrimary:true} ]
@@ -1110,7 +1109,6 @@
 
    function showIntro(){
      const body = `
-      <br>
        <p>5 letters. 25 seconds. 3 lives.</p>
        <p></p>
        <p>Highest score wins.</p>`;
