@@ -58,6 +58,10 @@
 
    :focus{ outline: auto; }
    :focus:not(:focus-visible){ outline: none; }
+   :where(button,[role="button"],a,input,select,textarea):focus-visible{
+    outline: none !important;
+    box-shadow: none;
+   }
    a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
    html, body, #app{ touch-action: none; }
    button{
