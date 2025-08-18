@@ -3,9 +3,9 @@
 <head>
  <meta charset="utf-8" />
  <meta
-   name="viewport"
-   content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
- />
+  name="viewport"
+  content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
+/>
  <meta name="apple-mobile-web-app-capable" content="yes" />
  <title>JUMBL</title>
  <style>
@@ -58,6 +58,8 @@
      -webkit-text-size-adjust:100%;
      overflow-x:hidden;
    }
+
+   .overlay, .dialog { touch-action: none; }
 
     /* Background SVG animation host */
     #bgSvg { z-index: 0; opacity: 0.50; }     /* subtle by default */
@@ -508,25 +510,32 @@
    /* ------------------------------
       3b) Kill pinch/double-tap zoom within the app
       ------------------------------ */
-   (function preventZoom(){
-     // Safari fires non-standard gesture events for pinch
-     ['gesturestart','gesturechange','gestureend'].forEach(type=>{
-       app.addEventListener(type, (e)=> e.preventDefault(), { passive:false });
-     });
+      (function preventZoom(){
+      // Cover the whole page (app + modal siblings)
+      const targets = [window, document, document.documentElement, document.body, app, overlay, dialog];
 
+      // 1) Pinch/gesture zoom (iOS Safari non-standard)
+      targets.forEach(t=>{
+        ['gesturestart','gesturechange','gestureend'].forEach(type=>{
+          t.addEventListener(type, e => e.preventDefault(), { passive:false });
+        });
+      });
 
-     // Block two-finger pinch on other engines
-     app.addEventListener('touchstart', (e)=>{ if(e.touches.length > 1) e.preventDefault(); }, { passive:false });
+      // 2) Multi-touch pinch (all engines)
+      const onTouchStart = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
+      // 3) Double-tap zoom heuristic
+      let lastTouchEnd = 0;
+      const onTouchEnd = e => {
+        const now = Date.now();
+        if (now - lastTouchEnd < 350) e.preventDefault();
+        lastTouchEnd = now;
+      };
 
-
-     // Block iOS double-tap-to-zoom (quick second tap)
-     let lastTouchEnd = 0;
-     app.addEventListener('touchend', (e)=>{
-       const now = Date.now();
-       if(now - lastTouchEnd < 350){ e.preventDefault(); }
-       lastTouchEnd = now;
-     }, { passive:false });
-   })();
+      targets.forEach(t=>{
+        t.addEventListener('touchstart', onTouchStart, { passive:false });
+        t.addEventListener('touchend',   onTouchEnd,   { passive:false });
+      });
+    })();
 
 
    /* ------------------------------
