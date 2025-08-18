@@ -506,6 +506,25 @@
    if(window.visualViewport){ visualViewport.addEventListener('resize', syncControlHeights); }
    window.addEventListener('resize', syncControlHeights);
 
+   function resetViewportIfZoomed(){
+    const vv = window.visualViewport;
+    if (!vv) return;
+    if (Math.abs(vv.scale - 1) < 0.02) return; // already ~1
+
+    // Nudge the viewport to force Safari to drop the stored scale
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) return;
+    const original = meta.getAttribute('content') || '';
+    const bumped  = original.replace(/initial-scale=[^,\s]+/, 'initial-scale=1.0001');
+    meta.setAttribute('content', bumped);
+    // put it back on the next tick
+    setTimeout(() => meta.setAttribute('content', original), 0);
+  }
+
+  // Run on restore/orientation changes — the usual culprits
+  window.addEventListener('pageshow', resetViewportIfZoomed);
+  window.addEventListener('orientationchange', resetViewportIfZoomed);
+  if (window.visualViewport) visualViewport.addEventListener('resize', resetViewportIfZoomed);
 
    /* ------------------------------
       3b) Kill pinch/double-tap zoom within the app
