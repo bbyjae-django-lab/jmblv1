@@ -141,17 +141,6 @@
       ------------------------------ */
    .header{ display:grid; grid-template-columns: 1fr 1fr 1fr; align-items:center; }
     .title{ text-align:center; font-weight:900; letter-spacing:.10em; font-size:4.25em; position:relative; z-index:3; opacity:1; mix-blend-mode:normal; color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: 3px var(--fg); }
-    /* Size/center is still driven by .title; SVG inherits currentColor */
-    .title .wordmark{ display:block; width:100%; height:1em; }
-    .title .wordmark text{
-      font: 800 1em/1 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      letter-spacing:.08em;
-      fill:none;
-      stroke:var(--fg);
-      stroke-width:3.2px;
-      stroke-linejoin:round; /* removes jaggies on M/B joins */
-    }
-
    .theme-wrap{ justify-self:end; }
    .icon{ width:28px; height:28px; display:block; } 
    .icon svg{ width:100%; height:100%; display:block; }
@@ -379,12 +368,8 @@
    <!-- Header -->
    <header class="header">
      <div></div>
-     <div class="title" aria-hidden="true">
-      <svg class="wordmark" viewBox="0 0 700 140" aria-hidden="true">
-        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">JUMBL</text>
-      </svg>
-    </div>
-         <div class="theme-wrap"></div>
+     <div class="title" aria-hidden="true">JUMBL</div>
+     <div class="theme-wrap"></div>
    </header>
 
 
