@@ -184,23 +184,23 @@
      user-select:none;
    }
    /* Base tile styling */
-.tile{ 
-  background: var(--tile-bg);
-  /* Individual, cozy elevation per box */
-  box-shadow: var(--tile-shadow-empty);
-  transition: box-shadow 140ms ease, transform 120ms ease;
-}
+    .tile{ 
+      background: var(--tile-bg);
+      /* Individual, cozy elevation per box */
+      box-shadow: var(--tile-shadow-empty);
+      transition: box-shadow 140ms ease, transform 120ms ease;
+    }
 
-/* Filled tiles stand out a touch more than empty slots */
-.tile:not(.empty){
-  box-shadow: var(--tile-shadow);
-}
+    /* Filled tiles stand out a touch more than empty slots */
+    .tile:not(.empty){
+      box-shadow: var(--tile-shadow);
+    }
 
-/* Empty tiles remain visible but subtler */
-.tile.empty{
-  color: var(--muted);
-  box-shadow: var(--tile-shadow-empty);
-}
+    /* Empty tiles remain visible but subtler */
+    .tile.empty{
+      color: var(--muted);
+      box-shadow: var(--tile-shadow-empty);
+    }
 
    .tile{ background:var(--tile-bg); }
    .tile.empty{ color: var(--muted); }
@@ -311,7 +311,7 @@
     60%{ transform:translateX(-1px) }  /* 70% of 2px */
     80%{ transform:translateX( 1px) }
   }
-  .shake-tiny{ animation: shakeTiny .42s linear; }
+  .shake-tiny{ animation: shakeTiny .44s linear; }
 
    /* Performance hints for smooth transforms */
    .row > .tile, .bank > .btn-letter { will-change: transform; contain: layout paint; }
