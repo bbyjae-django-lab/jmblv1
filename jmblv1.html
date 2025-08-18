@@ -139,7 +139,7 @@
    .score{  text-align:center; font-size:17px; font-weight:700; color:var(--muted); }
 
 
-   .timer-card{ border:none; padding:10px; }
+   .timer-card{ border:none; padding:0; background:transparent; border-radius:0; }
    .timer-rail{ position:relative; height:14px; border-radius:9999px; background:var(--track); overflow:hidden; }
    .timer-fill{ position:absolute; inset:0; transform-origin:left center; transform: scaleX(1); background:var(--fg); transition: transform 100ms linear; }
 
@@ -243,9 +243,9 @@
    /* ------------------------------
       8) Modals (Intro, Game Over, Loading/Retry)
       ------------------------------ */
-   .overlay{ position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; }
+   .overlay{ position:fixed; inset:0; background: rgba(0,0,0,.55); display:none; z-index: 1000;}
    .overlay[aria-hidden="false"]{ display:block; }
-   .dialog{ position:fixed; inset:0; display:none; place-items:center; }
+   .dialog{ position:fixed; inset:0; display:none; place-items:center; z-index: 1001;}
    .dialog[aria-hidden="false"]{ display:grid; pointer-events:auto; }
    .card{ width:min(92vw, 520px); background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow:none; }
    .card h2{ margin:0 0 10px; letter-spacing:.06em; }
