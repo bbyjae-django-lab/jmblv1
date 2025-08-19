@@ -68,8 +68,10 @@
      -webkit-text-size-adjust:100%;
      overflow-x:hidden;
    }
+   /* No rubber-banding/overscroll at the page level */
+    html, body{ overscroll-behavior: none; }
 
-    .row, .bank, .btn-letter, .tile { touch-action: manipulation; }
+    .row, .bank, .btn-letter, .tile { touch-action: none; }
 
     /* Background SVG animation host */
     #bgSvg { z-index: 0; opacity: 0.55; }     /* subtle by default */
@@ -90,7 +92,7 @@
     box-shadow: none;
    }
    a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-   html, body, #app{ touch-action: manipulation; }
+  html, body, #app, .overlay, .dialog { touch-action: none; }
    button{
      font:inherit; color:inherit;
      background:var(--btn-bg);
@@ -504,22 +506,31 @@
    const dialogTitle = $("#dialogTitle");
    const dialogBody = $("#dialogBody");
    const dialogActions = $("#dialogActions");
-   // —— Safety belt: block double-tap zoom and stray pinch on WebKit —— //
-(function preventZoomWebKit(){
+   // —— Block pinch + double-tap zoom across iOS/WebKit & friends —— //
+(function preventZoomEverywhere(){
+  const targets = [window, document, document.documentElement, document.body, document.getElementById('app')];
+
+  // iOS nonstandard gesture events (pinch)
+  ['gesturestart','gesturechange','gestureend'].forEach(type=>{
+    targets.forEach(t => t && t.addEventListener(type, e => e.preventDefault(), { passive:false }));
+  });
+
+  // Multi-touch pinch via touch events (any engine)
+  const stopIfMultiTouch = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
+  ['touchstart','touchmove'].forEach(type=>{
+    targets.forEach(t => t && t.addEventListener(type, stopIfMultiTouch, { passive:false }));
+  });
+
+  // Double-tap zoom
   let lastTouchEnd = 0;
-
-  // Block two-finger/pinch
-  document.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches.length > 1) e.preventDefault();
-  }, { passive: false });
-
-  // Block double-tap zoom
-  document.addEventListener('touchend', (e) => {
+  const onTouchEnd = e => {
     const now = Date.now();
     if (now - lastTouchEnd < 350) e.preventDefault();
     lastTouchEnd = now;
-  }, { passive: false });
+  };
+  targets.forEach(t => t && t.addEventListener('touchend', onTouchEnd, { passive:false }));
 })();
+
 
     // Keep buttons square on rotation/resize (no viewport scaling logic)
     window.addEventListener('resize', syncControlHeights);
