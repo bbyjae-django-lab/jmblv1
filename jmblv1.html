@@ -69,7 +69,7 @@
      overflow-x:hidden;
    }
 
-   .overlay, .dialog { touch-action: none; }
+   .overlay, .dialog { touch-action: manipulation; }
 
     /* Background SVG animation host */
     #bgSvg { z-index: 0; opacity: 0.55; }     /* subtle by default */
@@ -90,7 +90,7 @@
     box-shadow: none;
    }
    a, button{ -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-   html, body, #app{ touch-action: none; }
+   html, body, #app{ touch-action: manipulation; }
    button{
      font:inherit; color:inherit;
      background:var(--btn-bg);
@@ -116,8 +116,7 @@
       1) App shell & safe-area insets
       ------------------------------ */
    .app{
-     /* Use visualViewport width (via --vw) to avoid iOS rounding bleed */
-     width: min(calc(var(--vw, 100vw)), var(--maxw));
+    width: min(100vw, var(--maxw));
 
 
      min-height: 100vh;               /* fallback */
@@ -223,7 +222,9 @@
       ------------------------------ */
       .controls{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
       .controls button{ width:100%; position:relative; z-index:2; background:var(--btn-bg); }
-      .press{ transform: scale(.96); transition: transform 120ms ease, box-shadow 140ms ease; }
+      button.press, .btn-letter.press{
+        transform: scale(.96);
+        transition: transform 120ms ease, box-shadow 140ms ease;}
       .controls button{ font-weight:400; }
       .card .actions button{ font-weight:400; border-radius: calc(var(--radius) + 2px); }
       .theme-bottom{ display:flex; justify-content:center; }
@@ -324,6 +325,15 @@
      .timer-fill{ transition: none; }
    }
 
+   /* Answer bar press: scale tiles (not the whole row) */
+    .row.press-row > .tile {
+      transform: scale(.98);
+      transition: transform 120ms ease;
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .row.press-row > .tile { transform: none; }
+    }
 
    /* ------------------------------
       8) Modals (Intro, Game Over, Loading/Retry)
@@ -351,7 +361,7 @@
     <!-- Background SVG animation (non-interactive) -->
     <svg id="bgSvg" aria-hidden="true" focusable="false" role="presentation"
          preserveAspectRatio="xMidYMid slice" viewBox="10 10 80 80"
-         style="position:fixed;top:0;left:0;width:100%;height:100vh;pointer-events:none;">
+         style="position:fixed;top:0;left:0;width:100%;height:100dvh;pointer-events:none;">
       <defs>
         <style>
           @keyframes rotate {
@@ -494,77 +504,9 @@
    const dialogActions = $("#dialogActions");
 
 
-   /* ------------------------------
-      3) Viewport var --vw updates
-      ------------------------------ */
-   function setVW(){
-     const vv = window.visualViewport;
-     const w = (vv ? vv.width  : window.innerWidth)  || window.innerWidth;
-     const h = (vv ? vv.height : window.innerHeight) || window.innerHeight;
-     // Round to whole pixels to avoid sub-pixel overflow/bleed on older iOS
-     document.documentElement.style.setProperty('--vw', Math.round(w) + 'px');
-     document.documentElement.style.setProperty('--vh', Math.round(h) + 'px');
-   }
-   setVW();
-   if(window.visualViewport){
-     visualViewport.addEventListener('resize', setVW);
-     visualViewport.addEventListener('scroll', setVW);
-   }
-   window.addEventListener('orientationchange', setVW);
-   window.addEventListener('resize', setVW);
-   window.addEventListener('pageshow', setVW);
-   if(window.visualViewport){ visualViewport.addEventListener('resize', syncControlHeights); }
-   window.addEventListener('resize', syncControlHeights);
-
-   function resetViewportIfZoomed(){
-    const vv = window.visualViewport;
-    if (!vv) return;
-    if (Math.abs(vv.scale - 1) < 0.02) return; // already ~1
-
-    // Nudge the viewport to force Safari to drop the stored scale
-    const meta = document.querySelector('meta[name="viewport"]');
-    if (!meta) return;
-    const original = meta.getAttribute('content') || '';
-    const bumped  = original.replace(/initial-scale=[^,\s]+/, 'initial-scale=1.0001');
-    meta.setAttribute('content', bumped);
-    // put it back on the next tick
-    setTimeout(() => meta.setAttribute('content', original), 0);
-  }
-
-  // Run on restore/orientation changes — the usual culprits
-  window.addEventListener('pageshow', resetViewportIfZoomed);
-  window.addEventListener('orientationchange', resetViewportIfZoomed);
-  if (window.visualViewport) visualViewport.addEventListener('resize', resetViewportIfZoomed);
-
-   /* ------------------------------
-      3b) Kill pinch/double-tap zoom within the app
-      ------------------------------ */
-      (function preventZoom(){
-      // Cover the whole page (app + modal siblings)
-      const targets = [window, document, document.documentElement, document.body, app, overlay, dialog];
-
-      // 1) Pinch/gesture zoom (iOS Safari non-standard)
-      targets.forEach(t=>{
-        ['gesturestart','gesturechange','gestureend'].forEach(type=>{
-          t.addEventListener(type, e => e.preventDefault(), { passive:false });
-        });
-      });
-
-      // 2) Multi-touch pinch (all engines)
-      const onTouchStart = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
-      // 3) Double-tap zoom heuristic
-      let lastTouchEnd = 0;
-      const onTouchEnd = e => {
-        const now = Date.now();
-        if (now - lastTouchEnd < 350) e.preventDefault();
-        lastTouchEnd = now;
-      };
-
-      targets.forEach(t=>{
-        t.addEventListener('touchstart', onTouchStart, { passive:false });
-        t.addEventListener('touchend',   onTouchEnd,   { passive:false });
-      });
-    })();
+    // Keep buttons square on rotation/resize (no viewport scaling logic)
+    window.addEventListener('resize', syncControlHeights);
+    window.addEventListener('orientationchange', syncControlHeights);
 
 
    /* ------------------------------
@@ -963,8 +905,22 @@
 
    makeTap(shuffleBtn, onShuffle);
    makeTap(clearBtn, () => onClearAll({ animate: true }));
-   makeTap(answerRow, () => onBackspace({ animate: true }));
-
+    // Answer bar: squeeze tiles while held, backspace on release (no container transforms)
+    (function wireAnswerBarTap(){
+      function down(){
+        if (state.isAnimating || state.modalOpen) return;
+        answerRow.classList.add('press-row');
+      }
+      function up(){
+        answerRow.classList.remove('press-row');
+        if (state.isAnimating || state.modalOpen) return;
+        onBackspace({ animate: true });
+      }
+      answerRow.addEventListener('pointerdown', down);
+      answerRow.addEventListener('pointerup', up);
+      answerRow.addEventListener('pointercancel', up);
+      answerRow.addEventListener('pointerleave', up);
+    })();
 
    // Keyboard-to-UI press tracking (Space/Backspace/letters)
    const keyHold = new Map(); // key -> { type, idx?, el }
