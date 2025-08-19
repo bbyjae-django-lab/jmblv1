@@ -327,12 +327,17 @@
      .timer-fill{ transition: none; }
    }
 
-   /* Answer bar press: same imprint as buttons */
-    .row.press-row > .tile {
-      transform: translateY(1px) scale(.96);           /* identical movement */
-      box-shadow: var(--btn-shadow-pressed);           /* identical shadow */
-      transition: transform 120ms ease, box-shadow 140ms ease;
-    }
+   /* Answer bar press: transform on the row (composes with tile animations) */
+.row.press-row {
+  transform: translateY(1px) scale(.98);
+  transition: transform 120ms ease;
+}
+
+/* Keep the per-tile shadow change only */
+.row.press-row > .tile {
+  box-shadow: var(--btn-shadow-pressed);
+  transition: box-shadow 140ms ease;
+}
 
 
     @media (prefers-reduced-motion: reduce){
