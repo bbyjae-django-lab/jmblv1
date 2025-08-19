@@ -506,31 +506,12 @@
    const dialogTitle = $("#dialogTitle");
    const dialogBody = $("#dialogBody");
    const dialogActions = $("#dialogActions");
-   // —— Block pinch + double-tap zoom across iOS/WebKit & friends —— //
-(function preventZoomEverywhere(){
-  const targets = [window, document, document.documentElement, document.body, document.getElementById('app')];
-
-  // iOS nonstandard gesture events (pinch)
-  ['gesturestart','gesturechange','gestureend'].forEach(type=>{
-    targets.forEach(t => t && t.addEventListener(type, e => e.preventDefault(), { passive:false }));
-  });
-
-  // Multi-touch pinch via touch events (any engine)
-  const stopIfMultiTouch = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
-  ['touchstart','touchmove'].forEach(type=>{
-    targets.forEach(t => t && t.addEventListener(type, stopIfMultiTouch, { passive:false }));
-  });
-
-  // Double-tap zoom
-  let lastTouchEnd = 0;
-  const onTouchEnd = e => {
-    const now = Date.now();
-    if (now - lastTouchEnd < 350) e.preventDefault();
-    lastTouchEnd = now;
-  };
-  targets.forEach(t => t && t.addEventListener('touchend', onTouchEnd, { passive:false }));
+   (function preventZoomWebKit(){
+  // We already use user-scalable=no and touch-action:none; just guard old pinch paths
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
 })();
-
 
     // Keep buttons square on rotation/resize (no viewport scaling logic)
     window.addEventListener('resize', syncControlHeights);
@@ -933,22 +914,43 @@
 
    makeTap(shuffleBtn, onShuffle);
    makeTap(clearBtn, () => onClearAll({ animate: true }));
-    // Answer bar: squeeze tiles while held, backspace on release (no container transforms)
-    (function wireAnswerBarTap(){
-      function down(){
-        if (state.isAnimating || state.modalOpen) return;
-        answerRow.classList.add('press-row');
-      }
-      function up(){
-        answerRow.classList.remove('press-row');
-        if (state.isAnimating || state.modalOpen) return;
-        onBackspace({ animate: true });
-      }
-      answerRow.addEventListener('pointerdown', down);
-      answerRow.addEventListener('pointerup', up);
-      answerRow.addEventListener('pointercancel', up);
-      answerRow.addEventListener('pointerleave', up);
-    })();
+    // Answer bar: show imprint while held; remove exactly one letter on real release
+(function wireAnswerBarTap(){
+  let activePid = null; // which pointer we own
+
+  function cleanup(){
+    activePid = null;
+    answerRow.classList.remove('press-row');
+  }
+
+  function down(e){
+    if (state.isAnimating || state.modalOpen || activePid !== null) return;
+    activePid = e.pointerId ?? 1;
+    answerRow.classList.add('press-row');
+    // keep receiving events even if the finger drifts off the row
+    if (answerRow.setPointerCapture) {
+      try { answerRow.setPointerCapture(activePid); } catch {}
+    }
+  }
+
+  function up(e){
+    if (e.pointerId !== activePid) { cleanup(); return; } // ignore stray ups
+    cleanup();
+    if (state.isAnimating || state.modalOpen) return;
+    onBackspace({ animate: true });
+  }
+
+  function cancel(){
+    // never commit on cancel/leave; just clear the imprint
+    cleanup();
+  }
+
+  answerRow.addEventListener('pointerdown', down);
+  answerRow.addEventListener('pointerup', up);
+  answerRow.addEventListener('pointercancel', cancel);
+  // NOTE: do not commit on leave anymore (prevents double removals on tiny drift)
+  answerRow.addEventListener('pointerleave', cancel);
+})();
 
    // Keyboard-to-UI press tracking (Space/Backspace/letters)
    const keyHold = new Map(); // key -> { type, idx?, el }
