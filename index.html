@@ -69,7 +69,7 @@
      overflow-x:hidden;
    }
 
-   .overlay, .dialog { touch-action: manipulation; }
+    .row, .bank, .btn-letter, .tile { touch-action: manipulation; }
 
     /* Background SVG animation host */
     #bgSvg { z-index: 0; opacity: 0.55; }     /* subtle by default */
@@ -325,11 +325,13 @@
      .timer-fill{ transition: none; }
    }
 
-   /* Answer bar press: scale tiles (not the whole row) */
+   /* Answer bar press: same imprint as buttons */
     .row.press-row > .tile {
-      transform: scale(.98);
-      transition: transform 120ms ease;
+      transform: translateY(1px) scale(.96);           /* identical movement */
+      box-shadow: var(--btn-shadow-pressed);           /* identical shadow */
+      transition: transform 120ms ease, box-shadow 140ms ease;
     }
+
 
     @media (prefers-reduced-motion: reduce){
       .row.press-row > .tile { transform: none; }
@@ -502,7 +504,22 @@
    const dialogTitle = $("#dialogTitle");
    const dialogBody = $("#dialogBody");
    const dialogActions = $("#dialogActions");
+   // —— Safety belt: block double-tap zoom and stray pinch on WebKit —— //
+(function preventZoomWebKit(){
+  let lastTouchEnd = 0;
 
+  // Block two-finger/pinch
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+
+  // Block double-tap zoom
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 350) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+})();
 
     // Keep buttons square on rotation/resize (no viewport scaling logic)
     window.addEventListener('resize', syncControlHeights);
